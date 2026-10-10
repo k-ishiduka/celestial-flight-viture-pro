@@ -21,6 +21,8 @@ const bundled = await build({
   target: 'es2022',
   minify: true,
   legalComments: 'none',
+  // ブラウザ内の音声ライブラリはCDNから実行時に読み込む(index.html の import map で解決)
+  external: ['piper-plus', 'onnxruntime-web', 'https://*'],
   write: false,
 });
 const code = bundled.outputFiles[0].text;
@@ -87,7 +89,7 @@ writeFileSync(
     '1. このフォルダの index.html をダブルクリックして、Chrome(または Edge)で開きます。',
     '2. Python・Node・サーバーは不要です。Windows / Mac / Linux で同じように動きます。',
     '3. グラス(WebHID)を使う場合は Chrome / Edge で開いてください。',
-    '4. 解説の音声はブラウザの読み上げを使います。自然な日本語音声は、リポジトリ版で別途セットアップした場合のみ使えます。',
+    '4. 解説の音声は、ブラウザ内の自然な声(初回のみ約70MBをダウンロード)を使います。オフラインではこの端末の読み上げに切り替わります。',
     '5. 住所検索はインターネットに接続されていると使えます(国土地理院へ直接問い合わせます)。',
     '',
     '詳しい使い方は 使い方.md、クレジットは *CREDITS* / *LICENSE* を参照してください。',

@@ -230,6 +230,7 @@
                 ><span>解説の音声</span
                 ><select id="speechEngine">
                   <option value="neural" selected>自然な日本語音声</option>
+                  <option value="browser">ブラウザ内の自然な声(つくよみちゃん・初回のみ約70MB)</option>
                   <option value="system">この端末の読み上げ(ブラウザ)</option>
                 </select></label
               ><label class="setting-row"
@@ -238,7 +239,15 @@
                   <option value="jf_alpha">やわらかな女性の声</option>
                   <option value="jm_kumo">落ち着いた男性の声</option>
                 </select></label
-              ><label class="setting-row"
+              >
+              <p id="voiceCredit" class="quiet" hidden>
+                音声:
+                <a href="https://tyc.rei-yumesaki.net/material/corpus/" target="_blank" rel="noopener"
+                  >つくよみちゃんコーパス(CV.夢前黎)</a
+                >
+                / 合成: Piper Plus
+              </p>
+              <label class="setting-row"
                 ><span>Macの声</span
                 ><select id="voice"></select></label
               ><label class="setting-row"
@@ -404,6 +413,16 @@
       <p><a href="使い方.md" target="_blank">詳しい使い方とクレジット</a></p>
     </section>
     <div id="planetStatus" hidden></div>
+    <script type="importmap">
+      {
+        "imports": {
+          "piper-plus": "https://unpkg.com/piper-plus@0.8.1/src/index.js",
+          "@piper-plus/g2p": "https://unpkg.com/@piper-plus/g2p@0.4.2/src/index.js",
+          "@piper-plus/g2p/": "https://unpkg.com/@piper-plus/g2p@0.4.2/src/",
+          "onnxruntime-web": "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/ort.min.mjs"
+        }
+      }
+    </script>
     <script src="boot.js"></script>
     <script src="astronomy.browser.min.js"></script>
     <script type="module" src="app.js"></script>

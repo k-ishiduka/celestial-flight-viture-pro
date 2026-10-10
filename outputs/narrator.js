@@ -1,4 +1,5 @@
 import { guideClues, starDescription, starLore } from './rich-guide.js';
+import { BrowserVoice } from './browser-voice.js';
 import { constellationStories as stories } from './constellation-stories.js';
 const $ = id => document.getElementById(id);
 export class Narrator {
@@ -161,7 +162,23 @@ export class Narrator {
     }
     if ($('guideZoom').checked) this.experience.guide.lock(id, d);
     this.music.duck(true);
-    const neural = $('speechEngine').value === 'neural';
+    let engine = $('speechEngine').value;
+    if (engine === 'browser') {
+      try {
+        $('subtitle').textContent = '音声データを読み込んでいます(初回のみ・約70MB)。';
+        this.browserVoice ??= new BrowserVoice();
+        await this.browserVoice.load();
+        if (token !== this.token) return;
+      } catch {
+        // オフラインなどで読み込めない場合は、この端末の読み上げで続ける
+        engine = 'system';
+        $('speechEngine').value = 'system';
+        this.experience.notice(
+          'ブラウザ内の音声を読み込めなかったため、この端末の読み上げに切り替えました。',
+        );
+      }
+    }
+    const neural = engine === 'neural' || engine === 'browser';
     this.usingNeural = neural;
     this.abort = new AbortController();
     const signal = this.abort.signal;
@@ -184,6 +201,13 @@ export class Narrator {
     const prepare = async segment => {
       if (!neural) return null;
       if (signal.aborted) return null;
+      if (engine === 'browser') {
+        const blob = await this.browserVoice.synthesize(segment.text, Number($('speechRate').value));
+        if (signal.aborted) return null;
+        const url = URL.createObjectURL(blob);
+        this.urls.add(url);
+        return url;
+      }
       const response = await fetch('/api/speech', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
