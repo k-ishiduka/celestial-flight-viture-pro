@@ -203,8 +203,14 @@
                 ><span>日本の住所</span><input id="address" type="text" placeholder="東京都新宿区" /></label
               ><button id="searchAddress">国土地理院で住所検索</button
               ><select id="locations" aria-label="住所の検索結果">
-                <option value="">検索結果</option>
-              </select>
+                <option value="">検索結果</option></select
+              ><label class="setting-row"
+                ><span>保存名</span
+                ><input id="placeName" type="text" maxlength="40" placeholder="自宅のベランダ" /></label
+              ><button id="savePlace">この場所を保存</button
+              ><select id="savedPlaces" aria-label="保存した場所">
+                <option value="">保存した場所はありません</option></select
+              ><button id="deletePlace" disabled>選んだ場所を削除</button>
               <details>
                 <summary>緯度・経度を指定</summary>
                 <label class="setting-row"

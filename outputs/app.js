@@ -8,6 +8,7 @@ import { Experience } from './experience.js';
 import { sensorView } from './heading.js';
 import { NightMusic } from './music.js';
 import { adaptSpeechEngine } from './server-features.js';
+import { FavoritePlaces } from './favorite-places.js';
 const $ = id => document.getElementById(id),
   canvas = $('sky');
 const previewMode = new URLSearchParams(location.search).has('preview');
@@ -223,6 +224,7 @@ dust.visible = false;
 const experience = new Experience(scene, camera, renderer);
 const observer = new Observer(scene, camera, message => experience.notice(message));
 experience.observer = observer;
+new FavoritePlaces(message => experience.notice(message));
 experience.catalog = catalog;
 experience.catalogPositions = stars.geometry.attributes.position.array;
 camera.fov = +$('fov').value;
