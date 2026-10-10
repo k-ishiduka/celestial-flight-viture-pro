@@ -1,7 +1,7 @@
-import {GuidedView} from './guided-view.js?v=28';
+import {GuidedView} from './guided-view.js?v=29';
 import {starReadings} from './star-readings.js';
-import {ConstellationFocus} from './constellation-focus.js?v=28';
-import {createConstellationArt,loadConstellationIllustration} from './constellation-art.js?v=28';
+import {ConstellationFocus} from './constellation-focus.js?v=29';
+import {createConstellationArt,loadConstellationIllustration} from './constellation-art.js?v=29';
 import * as T from './three.module.js';
 const $=id=>document.getElementById(id),r=Math.PI/180;
 const eq=(ra,dec,radius=10000)=>new T.Vector3(radius*Math.cos(dec*r)*Math.cos(ra*r),radius*Math.sin(dec*r),radius*Math.cos(dec*r)*Math.sin(ra*r));

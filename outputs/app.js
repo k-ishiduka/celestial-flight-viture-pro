@@ -1,17 +1,17 @@
-import {SkyInterface} from './interface.js?v=28';
-import {SkyEnvironment} from './sky-environment.js?v=28';
-import {PlanetariumPlanets} from './planets.js?v=28';
-import {Observer} from './observer.js?v=28';
-import {Narrator} from './narrator.js?v=28';
+import {SkyInterface} from './interface.js?v=29';
+import {SkyEnvironment} from './sky-environment.js?v=29';
+import {PlanetariumPlanets} from './planets.js?v=29';
+import {Observer} from './observer.js?v=29';
+import {Narrator} from './narrator.js?v=29';
 import * as T from './three.module.js';
-import {Experience} from './experience.js?v=28';
+import {Experience} from './experience.js?v=29';
 import {sensorView} from './heading.js';
-import {NightMusic} from './music.js?v=28';
+import {NightMusic} from './music.js?v=29';
 const $=id=>document.getElementById(id), canvas=$('sky');
 const previewMode=new URLSearchParams(location.search).has('preview');
 const preferenceIDs=['journey','destination','mode','light','speed','lines','constellationLabels','names','nebula','meteors','fov','depth','trackingAxes','headInvert','headRoll','tourKind','tourInterval','volume','musicTrack','musicOrder','art','artDisplay','artOpacity','speechEngine','neuralVoice','speechRate','guideZoom','starStyle','renderQuality','atmosphere','horizonGuides','latitude','longitude'];
-try{let saved=JSON.parse(localStorage.getItem('celestial-preferences')||'{}');if(!saved.version||saved.version<3){saved.trackingAxes='nwu';saved.headInvert=false;saved.headRoll=false;}if(!saved.version||saved.version<4)saved.lines=true;if(!saved.version||saved.version<5){saved.trackingAxes='nwu';saved.headInvert=false;saved.headRoll=false;}if(!saved.version||saved.version<6)saved.tourKind='all';if(!saved.version||saved.version<7){saved.lines=true;saved.art=false;}if(!saved.version||saved.version<8)saved.artDisplay=saved.art?'always':'off';if(!saved.version||saved.version<9)saved.constellationLabels=true;for(let id of preferenceIDs){if(saved[id]!==undefined){let e=$(id);if(e.type==='checkbox')e.checked=saved[id];else if(e.tagName!=='SELECT'||Array.from(e.options).some(o=>o.value===saved[id]))e.value=saved[id];}}}catch{}
-document.addEventListener('change',e=>{if(previewMode||!preferenceIDs.includes(e.target.id))return;try{localStorage.setItem('celestial-preferences',JSON.stringify({version:10,...Object.fromEntries(preferenceIDs.map(id=>[id,$(id).type==='checkbox'?$(id).checked:$(id).value]))}));}catch{}});
+try{let saved=JSON.parse(localStorage.getItem('celestial-preferences')||'{}');if(!saved.version||saved.version<3){saved.trackingAxes='nwu';saved.headInvert=false;saved.headRoll=false;}if(!saved.version||saved.version<4)saved.lines=true;if(!saved.version||saved.version<5){saved.trackingAxes='nwu';saved.headInvert=false;saved.headRoll=false;}if(!saved.version||saved.version<6)saved.tourKind='all';if(!saved.version||saved.version<7){saved.lines=true;saved.art=false;}if(!saved.version||saved.version<8)saved.artDisplay=saved.art?'always':'off';if(!saved.version||saved.version<9)saved.constellationLabels=true;if(!saved.version||saved.version<11)saved.atmosphere=false;for(let id of preferenceIDs){if(saved[id]!==undefined){let e=$(id);if(e.type==='checkbox')e.checked=saved[id];else if(e.tagName!=='SELECT'||Array.from(e.options).some(o=>o.value===saved[id]))e.value=saved[id];}}}catch{}
+document.addEventListener('change',e=>{if(previewMode||!preferenceIDs.includes(e.target.id))return;try{localStorage.setItem('celestial-preferences',JSON.stringify({version:11,...Object.fromEntries(preferenceIDs.map(id=>[id,$(id).type==='checkbox'?$(id).checked:$(id).value]))}));}catch{}});
 const renderer=new T.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(1);renderer.setClearColor(0x010207);
 const scene=new T.Scene(),camera=new T.PerspectiveCamera(65,innerWidth/innerHeight,0.1,30000),stereo=new T.StereoCamera();stereo.eyeSep=0.12;
 let yaw=0.1,pitch=-0.25,walk=true,elapsed=0,last=0,frames=0,fps=0,sensorAt=0,raw=null,zero=null,devices=[],sound=null;
