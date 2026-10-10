@@ -1,7 +1,7 @@
-import {GuidedView} from './guided-view.js?v=27';
+import {GuidedView} from './guided-view.js?v=28';
 import {starReadings} from './star-readings.js';
-import {ConstellationFocus} from './constellation-focus.js?v=27';
-import {createConstellationArt,loadConstellationIllustration} from './constellation-art.js?v=27';
+import {ConstellationFocus} from './constellation-focus.js?v=28';
+import {createConstellationArt,loadConstellationIllustration} from './constellation-art.js?v=28';
 import * as T from './three.module.js';
 const $=id=>document.getElementById(id),r=Math.PI/180;
 const eq=(ra,dec,radius=10000)=>new T.Vector3(radius*Math.cos(dec*r)*Math.cos(ra*r),radius*Math.sin(dec*r),radius*Math.cos(dec*r)*Math.sin(ra*r));
@@ -16,7 +16,7 @@ export class Experience{
  $('tourKind').onchange=()=>{this.tourTime=0;this.tourIndex=-1;if(['tour','cruise'].includes($('journey').value))this.nextTour();};
  $('settingsButton').onclick=()=>{$('settings').style.display=$('settings').style.display==='block'?'none':'block';};
  $('photo').onclick=()=>this.photo();
- $('fov').oninput=()=>{camera.fov=+$('fov').value;camera.updateProjectionMatrix();};
+ $('fov').oninput=()=>{this.cancelTurn();this.guide.interrupt();camera.fov=+$('fov').value;camera.updateProjectionMatrix();};
  this.art=new T.Group();this.sky.add(this.art);
  const setArt=()=>{const mode=$('artDisplay').value;$('art').checked=mode!=='off';this.art.visible=mode==='always';$('artMode').setAttribute('aria-pressed',String(mode!=='off'));$('artMode').textContent=mode==='always'?'白黒の星座図：常時':mode==='guide'?'白黒の星座図：解説中':'白黒の星座図：OFF';};
  $('artDisplay').onchange=setArt;$('artMode').onclick=()=>{const modes=['off','guide','always'];$('artDisplay').value=modes[(modes.indexOf($('artDisplay').value)+1)%3];$('artDisplay').dispatchEvent(new Event('change',{bubbles:true}));};
@@ -55,8 +55,9 @@ export class Experience{
   const tri=[[279.2347,38.7837],[310.3579,45.2803],[297.6958,8.8683]];const vertices=[];for(let i=0;i<3;i++)vertices.push(...eq(...tri[i]).toArray(),...eq(...tri[(i+1)%3]).toArray());const tg=new T.BufferGeometry();tg.setAttribute('position',new T.Float32BufferAttribute(vertices,3));const summerLines=new T.LineSegments(tg,this.lines.material);this.lines.add(summerLines);const center=eq(295,31);this.constellationCenters.push({id:'SummerTriangle',name:'夏の大三角',ra:295,dec:31,vector:center});const art=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(createConstellationArt('Tri','夏の大三角')),transparent:true,depthTest:false,depthWrite:false,opacity:+$('artOpacity').value}));art.position.copy(center);art.scale.set(3000,3000,1);this.art.add(art);this.constellationAtlas.SummerTriangle={geometry:tg,art};this.routes.c_SummerTriangle=[295,31,'夏の大三角','ベガ、デネブ、アルタイルを結ぶ星の並び。'];const patterns=document.createElement('optgroup');patterns.label='星空の目印';patterns.appendChild(new Option('夏の大三角','c_SummerTriangle'));$('destination').appendChild(patterns);
   const labelCanvas=document.createElement('canvas');labelCanvas.width=512;labelCanvas.height=128;const lc=labelCanvas.getContext('2d');lc.font='60px system-ui';lc.fillStyle='#9edafa';lc.textAlign='center';lc.fillText('夏の大三角',256,75);const label=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(labelCanvas),transparent:true,depthTest:false,depthWrite:false,sizeAttenuation:false}));label.position.copy(eq(295,31,9700));label.scale.set(.18,.045,1);label.userData.constellationID='SummerTriangle';this.constellationNames.add(label);
 
-  try{const saved=JSON.parse(localStorage.getItem('celestial-preferences')||'{}');if(this.routes[saved.destination])this.go(saved.destination);}catch{}
   this.identities=identities;this.members=members;this.named=named;const starOptions=document.createElement('optgroup');starOptions.label='名前のある星';for(const star of named){this.routes['s_'+star.name]=[star.ra,star.dec,this.starName(star),''];starOptions.appendChild(new Option(this.starName(star),'s_'+star.name));}$('destination').appendChild(starOptions);
+  try{const saved=JSON.parse(localStorage.getItem('celestial-preferences')||'{}');if(this.routes[saved.destination])this.go(saved.destination);}catch{}
+  this.constellationNames.visible=$('constellationLabels').checked;
   for(const star of named){star.vector=eq(star.ra,star.dec);if(star.mag>2.3&&!jp[star.name])continue;const c=document.createElement('canvas');c.width=512;c.height=96;const ctx=c.getContext('2d');ctx.font='34px system-ui';ctx.fillStyle='#c0d5e8';ctx.shadowColor='#000';ctx.shadowBlur=6;ctx.fillText(this.starName(star),18,52);const sprite=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(c),transparent:true,opacity:.8,depthTest:false}));sprite.position.copy(star.vector.clone().multiplyScalar(.98));sprite.scale.set(950,178,1);sprite.position.y-=80;this.names.add(sprite);this.labels.push(sprite);}
   Promise.allSettled(illustrationJobs.map(load=>load()));
  }catch(e){this.atlasError=e;$('card').textContent='星図データを読み込めませんでした: '+e.message;this.notice('星図を読み込めませんでした。再読み込みで再試行できます。');}}

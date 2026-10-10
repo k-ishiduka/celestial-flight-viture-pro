@@ -28,8 +28,8 @@ export class Narrator{
  if(result.error){if(result.error.name==='AbortError')return;this.enabled=false;finish();this.experience.notice('自然な声の準備ができませんでした。少し待って、もう一度解説を押してください。');$('subtitle').textContent='自然な音声を準備できませんでした。解説ボタンで再試行できます。';return;}
  this.preparing=false;this.segmentIndex=index+1;
  if(segment.member!==undefined)this.experience.focus.revealMember(segment.member);if(segment.finishMembers)this.experience.focus.endNarrated();$('subtitle').textContent=segment.text;index++;queue(index+2);
- if(result.url){this.audio.src=result.url;const release=()=>{URL.revokeObjectURL(result.url);this.urls.delete(result.url);};this.audio.onended=()=>{release();next();};this.audio.onerror=()=>{release();finish();this.experience.notice('解説音声を再生できませんでした。もう一度解説を押してください。');};try{await this.audio.play();}catch{release();finish();this.experience.notice('解説ボタンをもう一度押してください');}}
- else{const utterance=new SpeechSynthesisUtterance(segment.text);utterance.lang='ja-JP';utterance.voice=this.voices[Number($('voice').value)]||this.voices[0];utterance.rate=Number($('speechRate').value);utterance.pitch=1;utterance.volume=.9;utterance.onend=next;utterance.onerror=()=>{if(token===this.token)finish();};this.utterance=utterance;speechSynthesis.speak(utterance);}
+ if(result.url){this.audio.src=result.url;const release=()=>{URL.revokeObjectURL(result.url);this.urls.delete(result.url);};this.audio.onended=()=>{release();next();};this.audio.onerror=()=>{release();this.enabled=false;finish();this.experience.notice('解説音声を再生できませんでした。もう一度解説を押してください。');};try{await this.audio.play();}catch{release();this.enabled=false;finish();this.experience.notice('解説ボタンをもう一度押してください');}}
+ else{const utterance=new SpeechSynthesisUtterance(segment.text);utterance.lang='ja-JP';utterance.voice=this.voices[Number($('voice').value)]||this.voices[0];utterance.rate=Number($('speechRate').value);utterance.pitch=1;utterance.volume=.9;utterance.onend=next;utterance.onerror=()=>{if(token===this.token){this.enabled=false;finish();this.experience.notice('読み上げを再生できませんでした。解説ボタンで再試行できます。');}};this.utterance=utterance;speechSynthesis.speak(utterance);}
  };next();
  }
 }

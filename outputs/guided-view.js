@@ -23,6 +23,7 @@ export class GuidedView{
   const temporary=new T.PerspectiveCamera();temporary.up.copy(up);temporary.lookAt(center);this.target.copy(temporary.quaternion);
   if(!this.active){this.orientation.copy(camera.quaternion);this.savedFov??=camera.fov;}if(!refresh)this.referenceHead=null;this.active=true;this.remaining=0;
  }
+ interrupt(){this.active=false;this.remaining=0;this.savedFov=null;this.frameShift=0;this.e.camera.updateProjectionMatrix();}
  release(){if(!this.active)return;this.orientation.copy(this.e.camera.quaternion);this.active=false;this.remaining=3;}
  update(camera,dt,head=new T.Quaternion()){
   if(!this.active&&!this.remaining)return;this.trackingAge+=dt;
