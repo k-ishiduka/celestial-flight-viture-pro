@@ -27,6 +27,7 @@ const preferenceIDs = [
   'nebula',
   'meteors',
   'meteorShower',
+  'mythNarration',
   'fov',
   'depth',
   'trackingAxes',
