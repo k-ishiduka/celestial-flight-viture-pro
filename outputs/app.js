@@ -154,27 +154,34 @@ const catalog = await fetch('./stars.json').then(r => {
   if (!r.ok) throw Error('星データが開けません');
   return r.json();
 });
-let pos = [],
-  col = [],
-  size = [],
-  magnitudes = [];
-for (const [ra, dec, mag, bv] of catalog) {
-  pos.push(...equatorial(ra, dec, 10000));
-  let k = Math.max(0.075, Math.min(3, Math.pow(2.512, -mag * 0.25)));
-  let c = new T.Color(bv < 0.1 ? '#b5d3ff' : bv < 0.6 ? '#e6edff' : bv < 1.2 ? '#fff0cf' : '#ffc694');
-  col.push(c.r * k, c.g * k, c.b * k);
-  size.push(Math.max(1.05, 6.8 - mag * 0.6));
-  magnitudes.push(mag);
+// 恒星の4色(B-V指数で選択)。毎回の文字列解析を避けるため先に作る。
+const starPalette = ['#b5d3ff', '#e6edff', '#fff0cf', '#ffc694'].map(hex => new T.Color(hex));
+let pos = new Float32Array(catalog.length * 3),
+  col = new Float32Array(catalog.length * 3),
+  size = new Float32Array(catalog.length),
+  magnitudes = new Float32Array(catalog.length);
+for (let i = 0; i < catalog.length; i++) {
+  const [ra, dec, mag, bv] = catalog[i];
+  pos.set(equatorial(ra, dec, 10000), i * 3);
+  const k = Math.max(0.075, Math.min(3, Math.pow(2.512, -mag * 0.25)));
+  const c = starPalette[bv < 0.1 ? 0 : bv < 0.6 ? 1 : bv < 1.2 ? 2 : 3];
+  col[i * 3] = c.r * k;
+  col[i * 3 + 1] = c.g * k;
+  col[i * 3 + 2] = c.b * k;
+  size[i] = Math.max(1.05, 6.8 - mag * 0.6);
+  magnitudes[i] = mag;
 }
 const stars = points(pos, col, size, magnitudes);
 // Fine points form the Milky Way; no diffuse cloud or nebula layer.
-pos = [];
-col = [];
-size = [];
+const milkyWayCount = 145000;
+pos = new Float32Array(milkyWayCount * 3);
+col = new Float32Array(milkyWayCount * 3);
+size = new Float32Array(milkyWayCount);
+let milkyWayUsed = 0;
 function gaussian() {
   return Math.sqrt(-2 * Math.log(Math.max(0.00001, rnd()))) * Math.cos(2 * Math.PI * rnd());
 }
-for (let i = 0; i < 145000; i++) {
+for (let i = 0; i < milkyWayCount; i++) {
   const l = rnd() < 0.3 ? gaussian() * 0.55 : rnd() * Math.PI * 2;
   const b = gaussian() * (rnd() < 0.8 ? 0.065 : 0.16);
   // The dark galactic lane is expressed through fewer stars, never through fog.
@@ -185,16 +192,20 @@ for (let i = 0; i < 145000; i++) {
   const ex = -0.05487556 * x + 0.49410943 * y - 0.86766615 * z,
     ey = -0.87343709 * x - 0.44482963 * y - 0.19807637 * z,
     ez = -0.48383502 * x + 0.74698224 * y + 0.45598378 * z;
-  pos.push(ex * 11000, ez * 11000, ey * 11000);
+  const at = milkyWayUsed++;
+  pos[at * 3] = ex * 11000;
+  pos[at * 3 + 1] = ez * 11000;
+  pos[at * 3 + 2] = ey * 11000;
   const strength = 0.08 + Math.pow(rnd(), 2) * 0.32,
     temperature = rnd();
-  col.push(
-    strength * (temperature < 0.25 ? 1 : 0.8),
-    strength * 0.9,
-    strength * (temperature > 0.65 ? 1.15 : 0.85),
-  );
-  size.push(0.9 + rnd() * 0.8);
+  col[at * 3] = strength * (temperature < 0.25 ? 1 : 0.8);
+  col[at * 3 + 1] = strength * 0.9;
+  col[at * 3 + 2] = strength * (temperature > 0.65 ? 1.15 : 0.85);
+  size[at] = 0.9 + rnd() * 0.8;
 }
+pos = pos.slice(0, milkyWayUsed * 3);
+col = col.slice(0, milkyWayUsed * 3);
+size = size.slice(0, milkyWayUsed);
 const milkyWay = points(pos, col, size);
 milkyWay.visible = $('nebula').checked;
 $('nebula').onchange = () => (milkyWay.visible = $('nebula').checked);

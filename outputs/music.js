@@ -3,7 +3,8 @@ export class NightMusic {
   constructor(notice) {
     this.notice = notice;
     this.audio = new Audio();
-    this.audio.preload = 'metadata';
+    // 曲の長さは playlist.json にあるため、再生を押すまで音声ファイルは取得しない
+    this.audio.preload = 'none';
     this.audio.volume = +$('volume').value;
     this.audio.loop = $('musicOrder').value === 'one';
     this.index = 0;
