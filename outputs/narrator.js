@@ -1,6 +1,7 @@
 import { guideClues, starDescription, starLore } from './rich-guide.js';
 import { BrowserVoice } from './browser-voice.js';
 import { constellationStories as stories } from './constellation-stories.js';
+import { constellationMyths as myths } from './constellation-myths.js';
 const $ = id => document.getElementById(id);
 export class Narrator {
   constructor(experience, music) {
@@ -111,6 +112,11 @@ export class Narrator {
         ? `ひとつずつの星が、線で結ばれました。${$('art').checked ? 'この並びに、星座の姿を重ねてみましょう。' : 'この星の並びが、星座の形を描いています。'}星は隣り合って見えても、宇宙では大きく離れていることがあります。`
         : 'その周りの淡い光にも、目を向けてみましょう。',
     });
+    // 星の説明のあと、設定でオンなら、その星座の神話・由来を語る
+    const myth = star || key === 'star' ? '' : myths[id];
+    if (myth && $('mythNarration')?.checked) {
+      segments.push({ text: `ここからは、${d[2]}にまつわるお話です。` + myth });
+    }
     const paced = segments.flatMap(segment => {
       const parts = segment.text.match(/[^。！？]+[。！？]?/g) || [segment.text];
       const chunks = [];
