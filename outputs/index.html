@@ -154,7 +154,25 @@
               ><label class="setting-row"
                 ><span>天の川の微光</span><input id="nebula" type="checkbox" checked /></label
               ><label class="setting-row"
-                ><span>流れ星</span><input id="meteors" type="checkbox" checked /></label
+                ><span>流れ星(演出)</span><input id="meteors" type="checkbox" checked /></label
+              ><label class="setting-row"
+                ><span>流星群</span
+                ><select id="meteorShower">
+                  <option value="auto">日付に合わせて自動</option>
+                  <option value="off">表示しない</option>
+                  <option value="quadrantids">しぶんぎ座流星群(1/3頃)</option>
+                  <option value="lyrids">こと座流星群(4/22頃)</option>
+                  <option value="eta-aquariids">みずがめ座η流星群(5/6頃)</option>
+                  <option value="perseids">ペルセウス座流星群(8/12頃)</option>
+                  <option value="draconids">りゅう座流星群(10/8頃)</option>
+                  <option value="orionids">オリオン座流星群(10/21頃)</option>
+                  <option value="leonids">しし座流星群(11/17頃)</option>
+                  <option value="geminids">ふたご座流星群(12/14頃)</option>
+                  <option value="ursids">こぐま座流星群(12/22頃)</option>
+                </select></label
+              >
+              <p id="showerStatus" class="quiet"></p>
+              <button id="showerJump">流星群の極大の夜へ移動</button
               ><label class="setting-row"
                 ><span>地平線と方角</span><input id="horizonGuides" type="checkbox" checked /></label
               ><label class="setting-row"
