@@ -11,8 +11,10 @@ import venv
 
 
 def main():
+    if sys.version_info[:2] < (3, 10):
+        raise SystemExit('Python 3.10以上で実行してください(動作確認済みは3.12): python3.12 setup_voice.py')
     if sys.version_info[:2] != (3, 12):
-        raise SystemExit('Python 3.12で実行してください: python3.12 setup_voice.py')
+        print('注意: 動作確認済みのPythonは3.12です。うまくいかない場合は3.12で実行してください。', flush=True)
     project = Path(__file__).resolve().parent
     work = project / 'work'
     work.mkdir(exist_ok=True)
@@ -26,7 +28,8 @@ def main():
     for name in ['config.json', 'kokoro-v1_0.pth', 'voices/jf_alpha.pt', 'voices/jm_kumo.pt']:
         print('音声データ:', name, flush=True)
         urlretrieve('https://huggingface.co/hexgrad/Kokoro-82M/resolve/main/' + name, assets / Path(name).name)
-    shutil.move(str(root / 'venv/lib/python3.12/site-packages'), str(root / 'site-packages'))
+    site_packages = next((root / 'venv/lib').glob('python3.*/site-packages'))
+    shutil.move(str(site_packages), str(root / 'site-packages'))
     version = 'kokoro-ja-20261010'
     def keep(info):
         return None if '__pycache__' in Path(info.name).parts or info.issym() else info

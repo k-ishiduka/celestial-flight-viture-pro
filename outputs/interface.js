@@ -1,26 +1,284 @@
 import * as T from './three.module.js';
-const $=id=>document.getElementById(id);
-const emit=id=>$(id).dispatchEvent(new Event('change',{bubbles:true}));
-const change=(id,value)=>{const node=$(id);if(node.type==='checkbox')node.checked=value;else node.value=value;emit(id);};
-export class SkyInterface{
- constructor(experience,observer,planets){this.e=experience;this.observer=observer;this.planets=planets;this.direction=new T.Vector3();this.elapsed=0;this.filter='all';this.query='';
- const settings=$('settings');const closeSettings=()=>{settings.style.display='none';$('settingsButton').setAttribute('aria-expanded','false');};
- $('settingsButton').onclick=()=>{const open=settings.style.display==='none';settings.style.display=open?'flex':'none';$('settingsButton').setAttribute('aria-expanded',String(open));$('searchPanel').hidden=true;};$('settingsClose').onclick=closeSettings;
- const search=open=>{$('searchPanel').hidden=!open;if(open){closeSettings();this.search();$('skySearch').focus();}};
- $('searchOpen').onclick=()=>search($('searchPanel').hidden);$('searchClose').onclick=()=>search(false);$('skySearch').onkeydown=event=>{if(event.key==='Enter'||event.key==='ArrowDown'){const first=$('searchResults').querySelector('button');if(first){event.preventDefault();if(event.key==='Enter')first.click();else first.focus();}}};$('skySearch').oninput=()=>{this.query=$('skySearch').value;this.search();};
- document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('[data-settings]').forEach(x=>x.hidden=x.dataset.settings!==b.dataset.tab);});
- document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{this.filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b));this.search();});
- document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>this.setView(b.dataset.view));
- document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{this.setView('space');change('journey',b.dataset.preset==='flight'?'cruise':b.dataset.preset==='guide'?'tour':'walk');change('speed',b.dataset.preset==='flight'?.4:.08);change('lines',true);change('constellationLabels',true);if(b.dataset.preset==='guide')change('tourKind','all');experience.notice(b.textContent+'を設定しました');});
- $('revealUI').onclick=()=>$('ui').classList.remove('hidden');$('stopNarration').onclick=()=>experience.narrator.stop();
- new MutationObserver(()=>{$('revealUI').hidden=!$('ui').classList.contains('hidden');}).observe($('ui'),{attributes:true,attributeFilter:['class']});
- addEventListener('keydown',event=>{const editing=['INPUT','SELECT','TEXTAREA'].includes(event.target.tagName);if(event.key==='Escape'){closeSettings();search(false);$('help').style.display='none';}if(event.key==='/'&&!editing){event.preventDefault();$('ui').classList.remove('hidden');search(true);}});
- observer.active=$('observe').checked;observer.ground.visible=observer.active;
- experience.atlasReady.then(()=>{if(experience.atlasError){$('loadingDetail').textContent='星図を読み込めませんでした。もう一度開いて再試行してください。';$('retryLoad').hidden=false;return;}this.search();$('loadingDetail').textContent='星空の準備ができました';$('loading').classList.add('done');setTimeout(()=>$('loading').hidden=true,700);});
- $('latitude').addEventListener('change',()=>this.location());$('longitude').addEventListener('change',()=>this.location());
- }
- setView(view){this.e.narrator?.stop();this.e.guide.release();this.e.focus.restore();this.e.focus.enabled=false;if(view==='solar'){change('planetMode','solar');}else{change('planetMode',view==='observe'?'sky':'off');change('observe',view==='observe');this.observer.update(0);let key=this.e.currentDestination,d=this.e.routes[key];if(view==='observe'&&d){const ra=d[0]*Math.PI/180,dec=d[1]*Math.PI/180,v=new T.Vector3(Math.cos(dec)*Math.cos(ra),Math.sin(dec),Math.cos(dec)*Math.sin(ra));if(this.observer.vector(v).y<.15){let best=null,highest=-2;for(const item of this.e.constellationCenters){const altitude=this.observer.vector(item.vector).normalize().y;if(altitude>highest){best=item;highest=altitude;}}if(best){key='c_'+best.id;d=this.e.routes[key];}}}if(d){$('card').textContent=d[3]||'名前をたどって、その星の物語へ。';this.e.go(key);}}this.update(1,0);}
- location(){$('locationName').textContent=`${Math.abs(Number($('latitude').value)).toFixed(3)}° ${Number($('latitude').value)<0?'S':'N'} / ${Math.abs(Number($('longitude').value)).toFixed(3)}° ${Number($('longitude').value)<0?'W':'E'}`;}
- search(){const normalize=s=>s.normalize('NFKC').toLowerCase().replace(/[\s・座]/g,'').replace(/[\u30a1-\u30f6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60));const q=normalize(this.query);const results=Object.entries(this.e.routes).filter(([key,d])=>key!=='random'&&!['orion','cygnus','andromeda'].includes(key)&&(this.filter==='all'||(this.filter==='star'?key.startsWith('s_'):key.startsWith('c_')))&&(!q||normalize(d[2]+' '+key).includes(q))).slice(0,q?30:12);const root=$('searchResults');root.replaceChildren();for(const [key,d]of results){const button=document.createElement('button');button.className='search-result';button.type='button';const name=document.createElement('strong');name.textContent=d[2];const kind=document.createElement('small');kind.textContent=key.startsWith('s_')?'恒星':key==='c_SummerTriangle'?'空の目印':key.startsWith('c_')?'星座':'星空の名所';button.append(name,kind);button.onclick=()=>{if(this.planets.mode==='solar')this.setView('space');this.e.narrator.stop();this.e.focus.restore();this.e.focus.enabled=false;this.e.go(key);$('destination').dispatchEvent(new Event('change',{bubbles:true}));const id=({core:'Sgr',cygnus:'Cyg',orion:'Ori',pleiades:'Tau',andromeda:'And'})[key]||key.replace(/^c_/, '');this.e.guide.lock(id,d);$('searchPanel').hidden=true;};root.append(button);}if(!results.length){const p=document.createElement('p');p.className='quiet';p.textContent=this.e.named?'見つかりませんでした。短い名前でも検索できます。':'星図を準備しています。';root.append(p);}}
- update(dt,t,live=false){this.elapsed+=dt;if(this.elapsed<.2)return;this.elapsed=0;const dock=document.querySelector('.bottom-dock').getBoundingClientRect();$('narrationPanel').style.bottom=(innerHeight-dock.top+12)+'px';const settings=$('settings');if(settings.style.display!=='none')settings.style.maxHeight=Math.max(150,dock.top-settings.getBoundingClientRect().top-12)+'px';const solar=this.planets.mode==='solar',ground=this.observer.active&&!solar,view=solar?'solar':ground?'observe':'space';for(const button of document.querySelectorAll('[data-view]')){const active=button.dataset.view===view;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));}const current=this.e.routes[this.e.currentDestination];const selected=this.planets.objects.find(p=>p.body===$('planetTarget').value);$('routeTitle').textContent=solar?selected?.name||'太陽系を巡る':this.e.focus.active?.name||current?.[2]||'星々の海へ。';$('viewEyebrow').textContent=solar?'OUR SOLAR SYSTEM':ground?'YOUR PLACE IN THE UNIVERSE':'THE NIGHT IS YOURS';$('timeReadout').textContent=$('date').value.replace('T',' ').replace(/-/g,'/');$('solarControls').hidden=!solar;$('trackingBadge').textContent=live?'頭の動きに追従中':'ドラッグで見渡す';$('trackingBadge').classList.toggle('connected',live);const camera=solar?this.planets.solarCamera:this.e.camera;camera.getWorldDirection(this.direction);const alt=Math.asin(T.MathUtils.clamp(this.direction.y,-1,1))*180/Math.PI,az=(Math.atan2(this.direction.x,-this.direction.z)*180/Math.PI+360)%360;const dirs=['北','北東','東','南東','南','南西','西','北西'];$('compassReadout').textContent=ground?`${dirs[Math.round(az/45)%8]} ${Math.round(az)}° · 高度 ${Math.round(alt)}°`:solar?'ドラッグで周囲を眺める':'自由な星空の旅';const n=this.e.narrator;const narrating=n?.speaking||n?.preparing;$('narrationPanel').hidden=!narrating;if(narrating){$('narrationState').textContent=n.preparing?'自然な声を準備しています':n.usingNeural?'自然な日本語の声':'日本語の星空解説';$('narrationProgress').textContent=n.segmentTotal?`${n.segmentIndex||0} / ${n.segmentTotal}`:'';$('narrationBar').style.width=(n.segmentTotal?100*(n.segmentIndex||0)/n.segmentTotal:0)+'%';}if(ground)this.location();if(solar)$('skyConditions').textContent=$('planetStatus').textContent;else if(ground)$('skyConditions').textContent=this.e.environment?.description||'日時と場所に合わせた星空';else $('skyConditions').textContent='118,216の恒星 · 88の星座';}
+const $ = id => document.getElementById(id);
+const emit = id => $(id).dispatchEvent(new Event('change', { bubbles: true }));
+const change = (id, value) => {
+  const node = $(id);
+  if (node.type === 'checkbox') node.checked = value;
+  else node.value = value;
+  emit(id);
+};
+export class SkyInterface {
+  constructor(experience, observer, planets) {
+    this.e = experience;
+    this.observer = observer;
+    this.planets = planets;
+    this.direction = new T.Vector3();
+    this.elapsed = 0;
+    this.filter = 'all';
+    this.query = '';
+    const settings = $('settings');
+    const closeSettings = () => {
+      settings.style.display = 'none';
+      $('settingsButton').setAttribute('aria-expanded', 'false');
+    };
+    $('settingsButton').onclick = () => {
+      const open = settings.style.display === 'none';
+      settings.style.display = open ? 'flex' : 'none';
+      $('settingsButton').setAttribute('aria-expanded', String(open));
+      $('searchPanel').hidden = true;
+    };
+    $('settingsClose').onclick = closeSettings;
+    const search = open => {
+      $('searchPanel').hidden = !open;
+      if (open) {
+        closeSettings();
+        this.search();
+        $('skySearch').focus();
+      }
+    };
+    $('searchOpen').onclick = () => search($('searchPanel').hidden);
+    $('searchClose').onclick = () => search(false);
+    $('skySearch').onkeydown = event => {
+      if (event.key === 'Enter' || event.key === 'ArrowDown') {
+        const first = $('searchResults').querySelector('button');
+        if (first) {
+          event.preventDefault();
+          if (event.key === 'Enter') first.click();
+          else first.focus();
+        }
+      }
+    };
+    $('skySearch').oninput = () => {
+      this.query = $('skySearch').value;
+      this.search();
+    };
+    document.querySelectorAll('[data-tab]').forEach(
+      b =>
+        (b.onclick = () => {
+          document.querySelectorAll('[data-tab]').forEach(x => x.classList.toggle('active', x === b));
+          document
+            .querySelectorAll('[data-settings]')
+            .forEach(x => (x.hidden = x.dataset.settings !== b.dataset.tab));
+        }),
+    );
+    document.querySelectorAll('[data-filter]').forEach(
+      b =>
+        (b.onclick = () => {
+          this.filter = b.dataset.filter;
+          document.querySelectorAll('[data-filter]').forEach(x => x.classList.toggle('active', x === b));
+          this.search();
+        }),
+    );
+    document.querySelectorAll('[data-view]').forEach(b => (b.onclick = () => this.setView(b.dataset.view)));
+    document.querySelectorAll('[data-preset]').forEach(
+      b =>
+        (b.onclick = () => {
+          this.setView('space');
+          change(
+            'journey',
+            b.dataset.preset === 'flight' ? 'cruise' : b.dataset.preset === 'guide' ? 'tour' : 'walk',
+          );
+          change('speed', b.dataset.preset === 'flight' ? 0.4 : 0.08);
+          change('lines', true);
+          change('constellationLabels', true);
+          if (b.dataset.preset === 'guide') change('tourKind', 'all');
+          experience.notice(b.textContent + 'を設定しました');
+        }),
+    );
+    $('revealUI').onclick = () => $('ui').classList.remove('hidden');
+    $('stopNarration').onclick = () => experience.narrator.stop();
+    new MutationObserver(() => {
+      $('revealUI').hidden = !$('ui').classList.contains('hidden');
+    }).observe($('ui'), { attributes: true, attributeFilter: ['class'] });
+    addEventListener('keydown', event => {
+      const editing = ['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target.tagName);
+      if (event.key === 'Escape') {
+        closeSettings();
+        search(false);
+        $('help').style.display = 'none';
+      }
+      if (event.key === '/' && !editing) {
+        event.preventDefault();
+        $('ui').classList.remove('hidden');
+        search(true);
+      }
+    });
+    observer.active = $('observe').checked;
+    observer.ground.visible = observer.active;
+    experience.atlasReady.then(() => {
+      if (experience.atlasError) {
+        $('loadingDetail').textContent = '星図を読み込めませんでした。もう一度開いて再試行してください。';
+        $('retryLoad').hidden = false;
+        return;
+      }
+      this.search();
+      $('loadingDetail').textContent = '星空の準備ができました';
+      $('loading').classList.add('done');
+      setTimeout(() => ($('loading').hidden = true), 700);
+    });
+    $('latitude').addEventListener('change', () => this.location());
+    $('longitude').addEventListener('change', () => this.location());
+  }
+  setView(view) {
+    this.e.narrator?.stop();
+    this.e.guide.release();
+    this.e.focus.restore();
+    this.e.focus.enabled = false;
+    if (view === 'solar') {
+      change('planetMode', 'solar');
+    } else {
+      change('planetMode', view === 'observe' ? 'sky' : 'off');
+      change('observe', view === 'observe');
+      this.observer.update(0);
+      let key = this.e.currentDestination,
+        d = this.e.routes[key];
+      if (view === 'observe' && d) {
+        const ra = (d[0] * Math.PI) / 180,
+          dec = (d[1] * Math.PI) / 180,
+          v = new T.Vector3(Math.cos(dec) * Math.cos(ra), Math.sin(dec), Math.cos(dec) * Math.sin(ra));
+        if (this.observer.vector(v).y < 0.15) {
+          let best = null,
+            highest = -2;
+          for (const item of this.e.constellationCenters) {
+            const altitude = this.observer.vector(item.vector).normalize().y;
+            if (altitude > highest) {
+              best = item;
+              highest = altitude;
+            }
+          }
+          if (best) {
+            key = 'c_' + best.id;
+            d = this.e.routes[key];
+          }
+        }
+      }
+      if (d) {
+        $('card').textContent = d[3] || '名前をたどって、その星の物語へ。';
+        this.e.go(key);
+      }
+    }
+    this.update(1, 0);
+  }
+  location() {
+    $('locationName').textContent =
+      `${Math.abs(Number($('latitude').value)).toFixed(3)}° ${Number($('latitude').value) < 0 ? 'S' : 'N'} / ${Math.abs(Number($('longitude').value)).toFixed(3)}° ${Number($('longitude').value) < 0 ? 'W' : 'E'}`;
+  }
+  search() {
+    const normalize = s =>
+      s
+        .normalize('NFKC')
+        .toLowerCase()
+        .replace(/[\s・座]/g, '')
+        .replace(/[\u30a1-\u30f6]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+    const q = normalize(this.query);
+    const results = Object.entries(this.e.routes)
+      .filter(
+        ([key, d]) =>
+          key !== 'random' &&
+          !['orion', 'cygnus', 'andromeda'].includes(key) &&
+          (this.filter === 'all' || (this.filter === 'star' ? key.startsWith('s_') : key.startsWith('c_'))) &&
+          (!q || normalize(d[2] + ' ' + key).includes(q)),
+      )
+      .slice(0, q ? 30 : 12);
+    const root = $('searchResults');
+    root.replaceChildren();
+    for (const [key, d] of results) {
+      const button = document.createElement('button');
+      button.className = 'search-result';
+      button.type = 'button';
+      const name = document.createElement('strong');
+      name.textContent = d[2];
+      const kind = document.createElement('small');
+      kind.textContent = key.startsWith('s_')
+        ? '恒星'
+        : key === 'c_SummerTriangle'
+          ? '空の目印'
+          : key.startsWith('c_')
+            ? '星座'
+            : '星空の名所';
+      button.append(name, kind);
+      button.onclick = () => {
+        if (this.planets.mode === 'solar') this.setView('space');
+        this.e.narrator.stop();
+        this.e.focus.restore();
+        this.e.focus.enabled = false;
+        this.e.go(key);
+        $('destination').dispatchEvent(new Event('change', { bubbles: true }));
+        const id =
+          { core: 'Sgr', cygnus: 'Cyg', orion: 'Ori', pleiades: 'Tau', andromeda: 'And' }[key] ||
+          key.replace(/^c_/, '');
+        this.e.guide.lock(id, d);
+        $('searchPanel').hidden = true;
+      };
+      root.append(button);
+    }
+    if (!results.length) {
+      const p = document.createElement('p');
+      p.className = 'quiet';
+      p.textContent = this.e.named
+        ? '見つかりませんでした。短い名前でも検索できます。'
+        : '星図を準備しています。';
+      root.append(p);
+    }
+  }
+  update(dt, t, live = false) {
+    this.elapsed += dt;
+    if (this.elapsed < 0.2) return;
+    this.elapsed = 0;
+    const dock = document.querySelector('.bottom-dock').getBoundingClientRect();
+    $('narrationPanel').style.bottom = innerHeight - dock.top + 12 + 'px';
+    const settings = $('settings');
+    if (settings.style.display !== 'none')
+      settings.style.maxHeight = Math.max(150, dock.top - settings.getBoundingClientRect().top - 12) + 'px';
+    const solar = this.planets.mode === 'solar',
+      ground = this.observer.active && !solar,
+      view = solar ? 'solar' : ground ? 'observe' : 'space';
+    for (const button of document.querySelectorAll('[data-view]')) {
+      const active = button.dataset.view === view;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', String(active));
+    }
+    const current = this.e.routes[this.e.currentDestination];
+    const selected = this.planets.objects.find(p => p.body === $('planetTarget').value);
+    $('routeTitle').textContent = solar
+      ? selected?.name || '太陽系を巡る'
+      : this.e.focus.active?.name || current?.[2] || '星々の海へ。';
+    $('viewEyebrow').textContent = solar
+      ? 'OUR SOLAR SYSTEM'
+      : ground
+        ? 'YOUR PLACE IN THE UNIVERSE'
+        : 'THE NIGHT IS YOURS';
+    $('timeReadout').textContent = $('date').value.replace('T', ' ').replace(/-/g, '/');
+    $('solarControls').hidden = !solar;
+    $('trackingBadge').textContent = live ? '頭の動きに追従中' : 'ドラッグで見渡す';
+    $('trackingBadge').classList.toggle('connected', live);
+    const camera = solar ? this.planets.solarCamera : this.e.camera;
+    camera.getWorldDirection(this.direction);
+    const alt = (Math.asin(T.MathUtils.clamp(this.direction.y, -1, 1)) * 180) / Math.PI,
+      az = ((Math.atan2(this.direction.x, -this.direction.z) * 180) / Math.PI + 360) % 360;
+    const dirs = ['北', '北東', '東', '南東', '南', '南西', '西', '北西'];
+    $('compassReadout').textContent = ground
+      ? `${dirs[Math.round(az / 45) % 8]} ${Math.round(az)}° · 高度 ${Math.round(alt)}°`
+      : solar
+        ? 'ドラッグで周囲を眺める'
+        : '自由な星空の旅';
+    const n = this.e.narrator;
+    const narrating = n?.speaking || n?.preparing;
+    $('narrationPanel').hidden = !narrating;
+    if (narrating) {
+      $('narrationState').textContent = n.preparing
+        ? '自然な声を準備しています'
+        : n.usingNeural
+          ? '自然な日本語の声'
+          : '日本語の星空解説';
+      $('narrationProgress').textContent = n.segmentTotal ? `${n.segmentIndex || 0} / ${n.segmentTotal}` : '';
+      $('narrationBar').style.width =
+        (n.segmentTotal ? (100 * (n.segmentIndex || 0)) / n.segmentTotal : 0) + '%';
+    }
+    if (ground) this.location();
+    if (solar) $('skyConditions').textContent = $('planetStatus').textContent;
+    else if (ground)
+      $('skyConditions').textContent = this.e.environment?.description || '日時と場所に合わせた星空';
+    else $('skyConditions').textContent = '118,216の恒星 · 88の星座';
+  }
 }

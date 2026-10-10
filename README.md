@@ -24,8 +24,22 @@
 
 自然な日本語音声はKokoroでMac内に生成します。初回の準備後は外部音声サービスへ文章を送りません。音声環境は一時領域で展開し、再起動などで消えた場合は `work/voice-bundle.tar.gz` から復元します。`work` フォルダは保持してください。別のMacではセットアップを再実行します。
 
+## 開発
+
+Node.js 22 以上が必要です(テストと整形のみ。アプリ本体の実行には不要です)。
+
+```bash
+npm install        # 初回のみ
+npm test           # work/verify-*.mjs をすべて実行
+npm run format     # Prettier で整形(コミット前に実行)
+```
+
+- サーバーは `outputs/server.py` です。静的ファイルは `Cache-Control: no-cache` で配信するため、JS を編集して再読み込みするだけで反映されます。
+- 8765番が他のアプリに使われている場合は、8767〜8776番に自動で切り替わります。
+- 生成した音声は `outputs/narration/` に保存され、合計が 1500MB を超えると古いものから削除されます。`CELESTIAL_NARRATION_MAX_MB` で上限を変えられます。
+
 ## 検証
 
-`node work/verify-guided.mjs` などの確認用スクリプトを同梱しています。ブラウザ表示・頭の追従・音声の聴き取りはChromeで確認してください。
+`npm test` で確認用スクリプト(`work/verify-*.mjs`)をまとめて実行できます。ブラウザ表示・頭の追従・音声の聴き取りはChromeで確認してください。
 
 星表・画像・ライブラリ・音声モデルのライセンスと出典は `outputs/*LICENSE*`、`outputs/*CREDITS*` に記載しています。星座図にはFree Art Licenseの画像、基準星の配置にはCC BY-SA 4.0の派生データを含みます。

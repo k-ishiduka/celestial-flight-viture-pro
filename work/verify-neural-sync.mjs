@@ -1,6 +1,122 @@
-import * as T from '../outputs/three.module.js';import {ConstellationFocus} from '../outputs/constellation-focus.js';import {Narrator} from '../outputs/narrator.js';import fs from 'node:fs';
-globalThis.Audio=class{pause(){}async play(){}};globalThis.fetch=async()=>({ok:true,blob:async()=>new Blob(['audio'])});const controls={explainSelected:{},art:{checked:false},inspect:{},followFocus:{checked:true},inspectTarget:{value:'constellation'},artOpacity:{value:'.28'},card:{},narrate:{},voice:{value:'0',replaceChildren(){}},journey:{value:'flight'},subtitle:{},speechRate:{value:'.95'},speechEngine:{value:'neural'},neuralVoice:{value:'jf_alpha'},guideZoom:{checked:true}};globalThis.document={getElementById:id=>controls[id],createElement:()=>({getContext:()=>({fillText(){}})})};globalThis.Option=class {};globalThis.window={speechSynthesis:{addEventListener(){}}};const spoken=[];globalThis.speechSynthesis={getVoices:()=>[{lang:'ja-JP',localService:true,name:'Kyoko'}],cancel(){},speak(u){spoken.push(u)}};globalThis.SpeechSynthesisUtterance=class {constructor(text){this.text=text;}};
-const members=JSON.parse(fs.readFileSync('outputs/constellation-members.json'));const vertices=[];let stars=members.SummerTriangle;const vec=s=>new T.Vector3(10000*Math.cos(s.dec*Math.PI/180)*Math.cos(s.ra*Math.PI/180),10000*Math.sin(s.dec*Math.PI/180),10000*Math.cos(s.dec*Math.PI/180)*Math.sin(s.ra*Math.PI/180));for(let i=0;i<3;i++)vertices.push(...vec(stars[i]).toArray(),...vec(stars[(i+1)%3]).toArray());let g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(vertices,3));const item={id:'SummerTriangle',name:'夏の大三角',ra:295,dec:31,vector:vec(stars[0])},picture=new T.Sprite(new T.SpriteMaterial());const e={sky:new T.Group(),art:new T.Group(),constellationNames:new T.Group(),camera:new T.PerspectiveCamera(),constellationAtlas:{SummerTriangle:{geometry:g,art:picture}},constellationCenters:[item],lines:new T.LineSegments(g,new T.LineBasicMaterial({opacity:.62})),members,named:stars,starName(s){return s.name;},notice(){},cancelTurn(){},guide:{active:false,lock(){this.active=true},release(){this.active=false}},nextTour(){}};const focus=new ConstellationFocus(e);e.focus=focus;focus.startNarrated(item);focus.revealMember(0);focus.update(.05);if(focus.line.geometry.drawRange.count!==0)throw Error('premature line');focus.revealMember(1);focus.update(1.5);if(focus.memberSprites.length!==2||focus.line.geometry.drawRange.count!==2)throw Error('second member edge');focus.revealMember(2);focus.update(1.5);if(focus.line.geometry.drawRange.count!==6)throw Error('triangle completion');focus.endNarrated();if(focus.line.geometry.attributes.position.count!==6)throw Error('geometry restore');
-for(const star of stars)star.vector=vec(star);const n=new Narrator(e,{duck(){}});e.narrator=n;await n.say('c_SummerTriangle',[295,31,'夏の大三角',''],true);for(let i=0;i<15;i++)await Promise.resolve();if(!n.speaking||!e.guide.active)throw Error('guide');let count=0;while(n.speaking&&count++<50){n.audio.onended();for(let i=0;i<15;i++)await Promise.resolve();}if(n.speaking||e.guide.active||focus.revealed.size!==3)throw Error('narration completion');console.log('Per-star names, edge reveal, audio segment synchronization and view release: PASS');
+import * as T from '../outputs/three.module.js';
+import { ConstellationFocus } from '../outputs/constellation-focus.js';
+import { Narrator } from '../outputs/narrator.js';
+import fs from 'node:fs';
+globalThis.Audio = class {
+  pause() {}
+  async play() {}
+};
+globalThis.fetch = async () => ({ ok: true, blob: async () => new Blob(['audio']) });
+const controls = {
+  explainSelected: {},
+  art: { checked: false },
+  inspect: {},
+  followFocus: { checked: true },
+  inspectTarget: { value: 'constellation' },
+  artOpacity: { value: '.28' },
+  card: {},
+  narrate: {},
+  voice: { value: '0', replaceChildren() {} },
+  journey: { value: 'flight' },
+  subtitle: {},
+  speechRate: { value: '.95' },
+  speechEngine: { value: 'neural' },
+  neuralVoice: { value: 'jf_alpha' },
+  guideZoom: { checked: true },
+};
+globalThis.document = {
+  getElementById: id => controls[id],
+  createElement: () => ({ getContext: () => ({ fillText() {} }) }),
+};
+globalThis.Option = class {};
+globalThis.window = { speechSynthesis: { addEventListener() {} } };
+const spoken = [];
+globalThis.speechSynthesis = {
+  getVoices: () => [{ lang: 'ja-JP', localService: true, name: 'Kyoko' }],
+  cancel() {},
+  speak(u) {
+    spoken.push(u);
+  },
+};
+globalThis.SpeechSynthesisUtterance = class {
+  constructor(text) {
+    this.text = text;
+  }
+};
+const members = JSON.parse(fs.readFileSync('outputs/constellation-members.json'));
+const vertices = [];
+let stars = members.SummerTriangle;
+const vec = s =>
+  new T.Vector3(
+    10000 * Math.cos((s.dec * Math.PI) / 180) * Math.cos((s.ra * Math.PI) / 180),
+    10000 * Math.sin((s.dec * Math.PI) / 180),
+    10000 * Math.cos((s.dec * Math.PI) / 180) * Math.sin((s.ra * Math.PI) / 180),
+  );
+for (let i = 0; i < 3; i++) vertices.push(...vec(stars[i]).toArray(), ...vec(stars[(i + 1) % 3]).toArray());
+let g = new T.BufferGeometry();
+g.setAttribute('position', new T.Float32BufferAttribute(vertices, 3));
+const item = { id: 'SummerTriangle', name: '夏の大三角', ra: 295, dec: 31, vector: vec(stars[0]) },
+  picture = new T.Sprite(new T.SpriteMaterial());
+const e = {
+  sky: new T.Group(),
+  art: new T.Group(),
+  constellationNames: new T.Group(),
+  camera: new T.PerspectiveCamera(),
+  constellationAtlas: { SummerTriangle: { geometry: g, art: picture } },
+  constellationCenters: [item],
+  lines: new T.LineSegments(g, new T.LineBasicMaterial({ opacity: 0.62 })),
+  members,
+  named: stars,
+  starName(s) {
+    return s.name;
+  },
+  notice() {},
+  cancelTurn() {},
+  guide: {
+    active: false,
+    lock() {
+      this.active = true;
+    },
+    release() {
+      this.active = false;
+    },
+  },
+  nextTour() {},
+};
+const focus = new ConstellationFocus(e);
+e.focus = focus;
+focus.startNarrated(item);
+focus.revealMember(0);
+focus.update(0.05);
+if (focus.line.geometry.drawRange.count !== 0) throw Error('premature line');
+focus.revealMember(1);
+focus.update(1.5);
+if (focus.memberSprites.length !== 2 || focus.line.geometry.drawRange.count !== 2)
+  throw Error('second member edge');
+focus.revealMember(2);
+focus.update(1.5);
+if (focus.line.geometry.drawRange.count !== 6) throw Error('triangle completion');
+focus.endNarrated();
+if (focus.line.geometry.attributes.position.count !== 6) throw Error('geometry restore');
+for (const star of stars) star.vector = vec(star);
+const n = new Narrator(e, { duck() {} });
+e.narrator = n;
+await n.say('c_SummerTriangle', [295, 31, '夏の大三角', ''], true);
+for (let i = 0; i < 15; i++) await Promise.resolve();
+if (!n.speaking || !e.guide.active) throw Error('guide');
+let count = 0;
+while (n.speaking && count++ < 50) {
+  n.audio.onended();
+  for (let i = 0; i < 15; i++) await Promise.resolve();
+}
+if (n.speaking || e.guide.active || focus.revealed.size !== 3) throw Error('narration completion');
+console.log('Per-star names, edge reveal, audio segment synchronization and view release: PASS');
 
-n.enabled=true;n.audio.play=async()=>{throw Error("playback blocked")};await n.say("c_SummerTriangle",[295,31,"Summer Triangle",""],true);for(let i=0;i<25;i++)await Promise.resolve();if(n.enabled||n.speaking||e.guide.active)throw Error("Failed playback must stop automatic narration");console.log("Playback failure stops auto-tour and restores view: PASS");
+n.enabled = true;
+n.audio.play = async () => {
+  throw Error('playback blocked');
+};
+await n.say('c_SummerTriangle', [295, 31, 'Summer Triangle', ''], true);
+for (let i = 0; i < 25; i++) await Promise.resolve();
+if (n.enabled || n.speaking || e.guide.active) throw Error('Failed playback must stop automatic narration');
+console.log('Playback failure stops auto-tour and restores view: PASS');

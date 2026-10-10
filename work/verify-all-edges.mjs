@@ -1,1 +1,72 @@
-import fs from 'node:fs';import assert from 'node:assert/strict';import * as T from '../outputs/three.module.js';import {ConstellationFocus} from '../outputs/constellation-focus.js';const members=JSON.parse(fs.readFileSync('outputs/constellation-members.json'));const features=JSON.parse(fs.readFileSync('outputs/constellations.json')).features;const elements={inspect:{},followFocus:{checked:true},artOpacity:{value:'.28'},art:{checked:false},card:{}};globalThis.document={getElementById:id=>elements[id],createElement:()=>({width:0,height:0,getContext:()=>({fillText(){}})})};const e={sky:new T.Group(),art:new T.Group(),constellationNames:new T.Group(),members,identities:JSON.parse(fs.readFileSync("outputs/star-identities.json")),constellationAtlas:{},camera:new T.PerspectiveCamera(),constellationCenters:[],starName:s=>s.name,narrator:{speaking:true}};const v=([ra,dec])=>{const a=ra*Math.PI/180,b=dec*Math.PI/180;return [10000*Math.cos(a)*Math.cos(b),10000*Math.sin(b),10000*Math.sin(a)*Math.cos(b)];};const grouped={};for(const f of features){grouped[f.id]??=[];for(const line of f.geometry.coordinates)for(let i=1;i<line.length;i++)grouped[f.id].push(...v(line[i-1]),...v(line[i]));}const focus=new ConstellationFocus(e);let edgeTotal=0;for(const [id,data]of Object.entries(grouped)){const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(data,3));e.constellationAtlas[id]={geometry};const item={id,name:id,vector:new T.Vector3(1,0,0)};e.constellationCenters=[item];focus.startNarrated(item);assert(focus.edges.every(edge=>edge.start>=0&&edge.end>=0),'unmatched member '+id);let last=0;for(let index=0;index<members[id].length;index++){focus.revealMember(index);focus.update(1.25);assert(focus.line.geometry.drawRange.count>=last);last=focus.line.geometry.drawRange.count;}assert.equal(last,data.length/3,'all edges revealed '+id);assert.deepEqual([...geometry.attributes.position.array],[...new Float32Array(data)],'source geometry retained');edgeTotal+=data.length/6;focus.restore();}console.log(`${Object.keys(grouped).length} constellations / ${edgeTotal} edges: endpoint matching, sequential reveal and original geometry PASS`);
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import * as T from '../outputs/three.module.js';
+import { ConstellationFocus } from '../outputs/constellation-focus.js';
+const members = JSON.parse(fs.readFileSync('outputs/constellation-members.json'));
+const features = JSON.parse(fs.readFileSync('outputs/constellations.json')).features;
+const elements = {
+  inspect: {},
+  followFocus: { checked: true },
+  artOpacity: { value: '.28' },
+  art: { checked: false },
+  card: {},
+};
+globalThis.document = {
+  getElementById: id => elements[id],
+  createElement: () => ({ width: 0, height: 0, getContext: () => ({ fillText() {} }) }),
+};
+const e = {
+  sky: new T.Group(),
+  art: new T.Group(),
+  constellationNames: new T.Group(),
+  members,
+  identities: JSON.parse(fs.readFileSync('outputs/star-identities.json')),
+  constellationAtlas: {},
+  camera: new T.PerspectiveCamera(),
+  constellationCenters: [],
+  starName: s => s.name,
+  narrator: { speaking: true },
+};
+const v = ([ra, dec]) => {
+  const a = (ra * Math.PI) / 180,
+    b = (dec * Math.PI) / 180;
+  return [10000 * Math.cos(a) * Math.cos(b), 10000 * Math.sin(b), 10000 * Math.sin(a) * Math.cos(b)];
+};
+const grouped = {};
+for (const f of features) {
+  grouped[f.id] ??= [];
+  for (const line of f.geometry.coordinates)
+    for (let i = 1; i < line.length; i++) grouped[f.id].push(...v(line[i - 1]), ...v(line[i]));
+}
+const focus = new ConstellationFocus(e);
+let edgeTotal = 0;
+for (const [id, data] of Object.entries(grouped)) {
+  const geometry = new T.BufferGeometry();
+  geometry.setAttribute('position', new T.Float32BufferAttribute(data, 3));
+  e.constellationAtlas[id] = { geometry };
+  const item = { id, name: id, vector: new T.Vector3(1, 0, 0) };
+  e.constellationCenters = [item];
+  focus.startNarrated(item);
+  assert(
+    focus.edges.every(edge => edge.start >= 0 && edge.end >= 0),
+    'unmatched member ' + id,
+  );
+  let last = 0;
+  for (let index = 0; index < members[id].length; index++) {
+    focus.revealMember(index);
+    focus.update(1.25);
+    assert(focus.line.geometry.drawRange.count >= last);
+    last = focus.line.geometry.drawRange.count;
+  }
+  assert.equal(last, data.length / 3, 'all edges revealed ' + id);
+  assert.deepEqual(
+    [...geometry.attributes.position.array],
+    [...new Float32Array(data)],
+    'source geometry retained',
+  );
+  edgeTotal += data.length / 6;
+  focus.restore();
+}
+console.log(
+  `${Object.keys(grouped).length} constellations / ${edgeTotal} edges: endpoint matching, sequential reveal and original geometry PASS`,
+);

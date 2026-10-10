@@ -4,6 +4,8 @@ __pycache__/
 .venv/
 work/*
 !work/verify-*.mjs
+!work/run-verify.mjs
 outputs/narration/
 *.log
 
+node_modules/
