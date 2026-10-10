@@ -24,15 +24,27 @@ export async function naturalVoiceAvailable() {
   }
 }
 
-/** 自然な音声が使えない環境では、解説の音声をブラウザの読み上げに切り替える(保存済みの設定は変えない)。 */
+/** 音声エンジンの選択に合わせて、関連する表示・操作を切り替える。 */
+function updateVoiceControls() {
+  const engine = $('speechEngine').value;
+  $('neuralVoice').disabled = engine !== 'neural';
+  $('voiceCredit').hidden = engine !== 'browser';
+}
+
+/**
+ * 付属サーバーの自然な音声(Kokoro)が使えない環境では、ブラウザ内の自然な声(Piper Plus)へ切り替える。
+ * 保存済みの設定は書き換えない(change イベントを出さない)。
+ */
 export async function adaptSpeechEngine() {
-  if (await naturalVoiceAvailable()) return;
   const select = $('speechEngine');
-  const neural = Array.from(select.options).find(option => option.value === 'neural');
-  if (neural) {
-    neural.disabled = true;
-    neural.textContent = '自然な日本語音声(この環境では未設定)';
+  select.addEventListener('change', updateVoiceControls);
+  if (!(await naturalVoiceAvailable())) {
+    const neural = Array.from(select.options).find(option => option.value === 'neural');
+    if (neural) {
+      neural.disabled = true;
+      neural.textContent = '自然な日本語音声(付属サーバー版・この環境では未設定)';
+    }
+    if (select.value === 'neural') select.value = 'browser';
   }
-  if (select.value === 'neural') select.value = 'system';
-  $('neuralVoice').disabled = true;
+  updateVoiceControls();
 }
