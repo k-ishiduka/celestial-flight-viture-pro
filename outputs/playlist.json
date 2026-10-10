@@ -2,84 +2,84 @@
   {
     "title": "夜の航路",
     "description": "柔らかなピアノと深い和音",
-    "file": "music/track-01.wav",
+    "file": "music/track-01.flac",
     "seconds": 80,
     "bpm": 48
   },
   {
     "title": "静かな銀河",
     "description": "ゆっくり広がる弦のような音",
-    "file": "music/track-02.wav",
+    "file": "music/track-02.flac",
     "seconds": 87,
     "bpm": 44
   },
   {
     "title": "星のしずく",
     "description": "ハープの小さな旋律",
-    "file": "music/track-03.wav",
+    "file": "music/track-03.flac",
     "seconds": 74,
     "bpm": 52
   },
   {
     "title": "青い軌道",
     "description": "温かなエレクトリックピアノ",
-    "file": "music/track-04.wav",
+    "file": "music/track-04.flac",
     "seconds": 77,
     "bpm": 50
   },
   {
     "title": "月の庭",
     "description": "静かなピアノの子守歌",
-    "file": "music/track-05.wav",
+    "file": "music/track-05.flac",
     "seconds": 83,
     "bpm": 46
   },
   {
     "title": "遠い灯",
     "description": "少ない音で包むアンビエント",
-    "file": "music/track-06.wav",
+    "file": "music/track-06.flac",
     "seconds": 91,
     "bpm": 42
   },
   {
     "title": "すばるのゆりかご",
     "description": "高い音がほどけるハープ",
-    "file": "music/track-07.wav",
+    "file": "music/track-07.flac",
     "seconds": 71,
     "bpm": 54
   },
   {
     "title": "夜の湖",
     "description": "低い和音と穏やかな旋律",
-    "file": "music/track-08.wav",
+    "file": "music/track-08.flac",
     "seconds": 87,
     "bpm": 44
   },
   {
     "title": "天の川の余白",
     "description": "長い余韻のピアノ",
-    "file": "music/track-09.wav",
+    "file": "music/track-09.flac",
     "seconds": 80,
     "bpm": 48
   },
   {
     "title": "白鳥の夢",
     "description": "浮遊する持続音と鍵盤",
-    "file": "music/track-10.wav",
+    "file": "music/track-10.flac",
     "seconds": 83,
     "bpm": 46
   },
   {
     "title": "星間の子守歌",
     "description": "優しい音色の子守歌",
-    "file": "music/track-11.wav",
+    "file": "music/track-11.flac",
     "seconds": 85,
     "bpm": 45
   },
   {
     "title": "夜明け前",
     "description": "明るい和音とゆっくりした旋律",
-    "file": "music/track-12.wav",
+    "file": "music/track-12.flac",
     "seconds": 74,
     "bpm": 52
   }
