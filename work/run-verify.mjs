@@ -6,7 +6,9 @@ import { dirname, join } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = dirname(here);
-const scripts = readdirSync(here).filter((f) => /^verify-.*\.mjs$/.test(f)).sort();
+const scripts = readdirSync(here)
+  .filter(f => /^verify-.*\.mjs$/.test(f))
+  .sort();
 const failed = [];
 
 for (const script of scripts) {
@@ -15,7 +17,13 @@ for (const script of scripts) {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${script}`);
   if (!ok) {
     failed.push(script);
-    console.log((result.stdout + result.stderr).trim().split('\n').map((l) => '      ' + l).join('\n'));
+    console.log(
+      (result.stdout + result.stderr)
+        .trim()
+        .split('\n')
+        .map(l => '      ' + l)
+        .join('\n'),
+    );
   }
 }
 
