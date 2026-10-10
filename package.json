@@ -1,0 +1,16 @@
+{
+  "name": "celestial-flight-viture-pro",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "夜の航路 — 初代VITURE Pro向け星空・プラネタリウム",
+  "scripts": {
+    "start": "python3 outputs/launch.py",
+    "test": "node work/run-verify.mjs",
+    "format": "prettier --write \"outputs/*.{js,css,html}\" \"work/*.mjs\"",
+    "format:check": "prettier --check \"outputs/*.{js,css,html}\" \"work/*.mjs\""
+  },
+  "devDependencies": {
+    "prettier": "3.3.3"
+  }
+}
