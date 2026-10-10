@@ -235,6 +235,26 @@ experience.environment = environment;
 const interfaceView = new SkyInterface(experience, observer, planets);
 const headEuler = new T.Euler(0, 0, 0, 'YXZ'),
   headOrientation = new T.Quaternion();
+// 軽量モード: 暗い星(7等より暗い星)を描画から外し、天の川の点を間引く。
+// 肉眼で見える星は約5,000個(6等まで)なので、見た目への影響は小さい。
+const LIGHT_STAR_LIMIT_MAGNITUDE = 7;
+const LIGHT_MILKY_WAY_RATIO = 0.3;
+const lightStarIndex = (() => {
+  const keep = [];
+  for (let i = 0; i < catalog.length; i++) if (catalog[i][2] <= LIGHT_STAR_LIMIT_MAGNITUDE) keep.push(i);
+  return new T.Uint32BufferAttribute(keep, 1);
+})();
+const milkyWayPointCount = milkyWay.geometry.attributes.position.count;
+function applyQuality() {
+  const light = $('renderQuality').value === 'light';
+  stars.geometry.setIndex(light ? lightStarIndex : null);
+  milkyWay.geometry.setDrawRange(
+    0,
+    light ? Math.floor(milkyWayPointCount * LIGHT_MILKY_WAY_RATIO) : Infinity,
+  );
+}
+$('renderQuality').addEventListener('change', applyQuality);
+applyQuality();
 function resize() {
   let s = $('mode').value === 'sbs';
   renderer.setPixelRatio(s ? 1 : $('renderQuality').value === 'fine' ? Math.min(devicePixelRatio, 2) : 1);
@@ -251,6 +271,22 @@ resize();
 addEventListener('resize', resize);
 $('mode').onchange = resize;
 $('renderQuality').onchange = resize;
+// 低fpsが続く場合に1回だけ軽量モードへ切り替える(非表示タブでは判定しない)。
+let slowSeconds = 0,
+  autoLightTried = false;
+function watchPerformance(currentFps) {
+  if (autoLightTried || previewMode || document.visibilityState !== 'visible') {
+    slowSeconds = 0;
+    return;
+  }
+  const quality = $('renderQuality');
+  slowSeconds = currentFps < 24 ? slowSeconds + 1 : 0;
+  if (slowSeconds < 5 || quality.value === 'light') return;
+  autoLightTried = true;
+  quality.value = 'light';
+  quality.dispatchEvent(new Event('change', { bubbles: true }));
+  experience.notice('動作が重いため「軽量」描画に切り替えました。設定の「描画品質」で戻せます。');
+}
 function frame(t) {
   let clockDelta = last ? Math.max(0, (t - last) / 1000) : 0;
   let dt = Math.min(0.05, clockDelta);
@@ -294,9 +330,11 @@ function frame(t) {
     renderCamera = planets.mode === 'solar' ? planets.solarCamera : camera;
   stereo.eyeSep = +$('depth').value;
 
+  const lightMode = $('renderQuality').value === 'light';
   for (const p of [stars, milkyWay, dust]) {
     const u = p.material.uniforms;
-    u.brightness.value = +$('light').value * (p === milkyWay ? 0.8 : p === stars ? 2.2 : 1);
+    u.brightness.value =
+      +$('light').value * (p === milkyWay ? (lightMode ? 1.6 : 0.8) : p === stars ? 2.2 : 1);
     u.visibility.value = environment.starVisibility;
     u.ground.value = observer.active && planets.mode !== 'solar' ? 1 : 0;
     u.natural.value = $('starStyle').value === 'natural' ? 1 : 0;
@@ -332,6 +370,7 @@ function frame(t) {
   if (t - fps > 1000) {
     $('status').textContent =
       `${catalog.length.toLocaleString()} stars · ${Math.round((frames * 1000) / (t - fps))} fps\n${canvas.width} × ${canvas.height} · ${planets.mode === 'solar' ? '太陽系の軌道と自転' : experience.description()}${Number($('timeFlow').value) || planets.mode !== 'off' ? ' · ' + $('date').value.replace('T', ' ') : ''}\n${live ? '頭の動きに追従中' : devices.length ? 'センサー信号を待機中' : 'ドラッグで見渡せます'}`;
+    watchPerformance(Math.round((frames * 1000) / (t - fps)));
     fps = t;
     frames = 0;
   }

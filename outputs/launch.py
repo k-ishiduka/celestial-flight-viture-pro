@@ -1,7 +1,10 @@
 """夜の航路を起動してChromeで開く。8765番が使用中なら別のポートへ切り替える。"""
 import os
+import shutil
 import subprocess
+import sys
 import urllib.request
+import webbrowser
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 
@@ -20,8 +23,29 @@ def is_this_app(port):
         return False
 
 
-def open_chrome(url):
-    subprocess.run(['open', '-a', 'Google Chrome', url], check=False)
+def chrome_command():
+    """Chromeの起動コマンドを返す。見つからなければ None(既定のブラウザで開く)。"""
+    if sys.platform == 'darwin':
+        return ['open', '-a', 'Google Chrome']
+    candidates = ['google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser', 'chrome']
+    if sys.platform == 'win32':
+        for base in (os.environ.get('ProgramFiles'), os.environ.get('ProgramFiles(x86)'), os.environ.get('LocalAppData')):
+            if base:
+                candidates.append(os.path.join(base, 'Google', 'Chrome', 'Application', 'chrome.exe'))
+    for name in candidates:
+        path = shutil.which(name) or (name if os.path.isfile(name) else None)
+        if path:
+            return [path]
+    return None
+
+
+def open_browser(url):
+    command = chrome_command()
+    if command:
+        subprocess.run(command + [url], check=False)
+    else:
+        print('Chromeが見つからないため既定のブラウザで開きます。グラス(WebHID)の接続にはChromeかEdgeが必要です。')
+        webbrowser.open(url)
 
 
 def bind():
@@ -46,13 +70,13 @@ def main():
         raise SystemExit(1)
     url = f'http://localhost:{port}/'
     if server is None:
-        open_chrome(url)
+        open_browser(url)
         return
     try:
         start_voice()
     except Exception:
         print('自然な音声の準備が必要です。先にsetup_voice.pyを実行してください。星空はそのまま使えます。')
-    open_chrome(url)
+    open_browser(url)
     print(f'夜の航路を起動しました({url})。このウィンドウを閉じると終了します。')
     try:
         server.serve_forever()
