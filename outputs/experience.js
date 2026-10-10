@@ -253,6 +253,11 @@ export class Experience {
     }
     this.go(key);
   }
+  /** 世界座標の向きへ、視線をなめらかに向ける(fov は視野角)。 */
+  lookAt(vector, fov = 40) {
+    this.target = angle(vector);
+    this.target.fov = fov;
+  }
   cancelTurn() {
     this.target = null;
   }

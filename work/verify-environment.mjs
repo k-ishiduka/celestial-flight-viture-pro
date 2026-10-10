@@ -95,20 +95,35 @@ controls.atmosphere = { checked: false };
 controls.horizonGuides = { checked: true };
 observer.setDate(new Date('2026-10-10T03:00:00Z'));
 observer.update(0);
-const moonObject = new T.Object3D();
-moonObject.material = { uniforms: { lightDirection: { value: new T.Vector3() } } };
-const environment = {
-  observer,
-  camera: new T.PerspectiveCamera(),
-  eqGroup: new T.Group(),
-  dome: new T.Object3D(),
-  horizon: new T.Object3D(),
-  sun: new T.Object3D(),
-  moon: moonObject,
-  age: 1,
-  lastKey: '',
-  uniforms: { sunDirection: { value: new T.Vector3() }, sunAltitude: { value: 0 } },
+const makeEnvironment = () => {
+  const moonObject = new T.Object3D();
+  moonObject.material = {
+    uniforms: {
+      lightDirection: { value: new T.Vector3() },
+      shadowDirection: { value: new T.Vector3() },
+      shadowOn: { value: 0 },
+    },
+  };
+  return {
+    observer,
+    camera: new T.PerspectiveCamera(),
+    eqGroup: new T.Group(),
+    dome: new T.Object3D(),
+    horizon: new T.Object3D(),
+    sun: new T.Object3D(),
+    moon: moonObject,
+    corona: new T.Sprite(new T.SpriteMaterial()),
+    solarObscuration: 0,
+    lunarEclipse: null,
+    effectiveSunAltitude: -90,
+    updateEclipse: SkyEnvironment.prototype.updateEclipse,
+    eclipseNote: SkyEnvironment.prototype.eclipseNote,
+    age: 1,
+    lastKey: '',
+    uniforms: { sunDirection: { value: new T.Vector3() }, sunAltitude: { value: 0 } },
+  };
 };
+const environment = makeEnvironment();
 SkyEnvironment.prototype.update.call(environment, 0);
 assert(environment.sunAltitude > 0);
 assert.equal(environment.starVisibility, 1);
@@ -119,4 +134,53 @@ assert(environment.starVisibility < 0.01);
 assert.equal(environment.dome.visible, true);
 console.log(
   'Ground observation keeps stars visible by default in daylight; optional realistic daylight still works: PASS',
+);
+
+// ---- 日食・月食の描画状態(実際の食で確認) ----
+const setPlace = (lat, lon, tz, iso) => {
+  controls.latitude.value = String(lat);
+  controls.longitude.value = String(lon);
+  controls.timezone.value = String(tz);
+  observer.setDate(new Date(iso));
+  observer.update(0);
+};
+{
+  // 2024-04-08 の皆既日食(米国ダラス・昼間): 太陽は完全に隠れ、コロナが出て、昼夜の明るさ再現ONでは暗くなる
+  controls.atmosphere.checked = true;
+  setPlace(32.7767, -96.797, -5, '2024-04-08T18:42:37Z');
+  const eclipse = makeEnvironment();
+  SkyEnvironment.prototype.update.call(eclipse, 0);
+  assert(eclipse.sunAltitude > 60, '昼間の高い太陽');
+  assert(eclipse.solarObscuration > 0.999, `皆既日食 (隠れる割合 ${eclipse.solarObscuration})`);
+  assert(eclipse.corona.material.opacity > 0.95, 'コロナが見える');
+  assert(eclipse.effectiveSunAltitude < -5, '皆既のあいだは薄明のように暗い');
+  assert(eclipse.starVisibility > 0.2, '星が見え始める');
+  assert(eclipse.description.includes('日食の最中'));
+  // 食が始まる前(部分食の始まりは 17:23 UTC ごろ)は、通常の昼
+  setPlace(32.7767, -96.797, -5, '2024-04-08T16:30:00Z');
+  const before = makeEnvironment();
+  SkyEnvironment.prototype.update.call(before, 0);
+  assert(before.solarObscuration === 0 && before.corona.material.opacity === 0);
+  assert(before.starVisibility < 0.01 && !before.description.includes('日食'));
+
+  // 2022-11-08 の皆既月食(東京の夕方): 月は地球の影に入り、影の中心は月のすぐ近く
+  controls.atmosphere.checked = false;
+  setPlace(35.68124, 139.76712, 9, '2022-11-08T10:59:07Z');
+  const lunar = makeEnvironment();
+  SkyEnvironment.prototype.update.call(lunar, 0);
+  assert.equal(lunar.moon.material.uniforms.shadowOn.value, 1);
+  assert(lunar.lunarEclipse.inUmbra && lunar.lunarEclipse.magnitude > 0.99);
+  assert(lunar.description.includes('月食の最中'));
+  const toShadow = lunar.moon.material.uniforms.shadowDirection.value;
+  const toMoon = lunar.observer.vector(lunar.moon.position).normalize();
+  assert(Math.acos(Math.min(1, toShadow.dot(toMoon))) * (180 / Math.PI) < 0.8, '影の中心は月の近く');
+  // 食でない満月は影なし
+  setPlace(35.68124, 139.76712, 9, '2022-12-08T13:00:00Z');
+  const plain = makeEnvironment();
+  SkyEnvironment.prototype.update.call(plain, 0);
+  assert.equal(plain.moon.material.uniforms.shadowOn.value, 0);
+  assert(plain.lunarEclipse === null && !plain.description.includes('食'));
+}
+console.log(
+  'Eclipses in the sky environment: total solar eclipse darkening/corona and lunar umbra shadow: PASS',
 );

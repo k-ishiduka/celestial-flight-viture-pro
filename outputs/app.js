@@ -11,6 +11,7 @@ import { adaptSpeechEngine } from './server-features.js';
 import { FavoritePlaces } from './favorite-places.js';
 import { MeteorShowerSky } from './meteor-showers.js';
 import { setupMeteorShowerUI } from './meteor-shower-ui.js';
+import { setupEclipseUI } from './eclipse-ui.js';
 const $ = id => document.getElementById(id),
   canvas = $('sky');
 const previewMode = new URLSearchParams(location.search).has('preview');
@@ -240,6 +241,7 @@ const solarStars = stars.clone(),
 planets.solarScene.add(solarStars, solarMilkyWay);
 const environment = new SkyEnvironment(scene, camera, observer);
 experience.environment = environment;
+setupEclipseUI(observer, environment, experience, message => experience.notice(message));
 const interfaceView = new SkyInterface(experience, observer, planets);
 const headEuler = new T.Euler(0, 0, 0, 'YXZ'),
   headOrientation = new T.Quaternion();
