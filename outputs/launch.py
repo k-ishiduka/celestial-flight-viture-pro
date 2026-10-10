@@ -5,10 +5,9 @@ import subprocess
 import sys
 import urllib.request
 import webbrowser
-from http.server import ThreadingHTTPServer
 from pathlib import Path
 
-from server import NARRATION_DIR, Handler, start_voice
+from server import NARRATION_DIR, AppServer, Handler, start_voice
 
 # 8766番は音声ワーカーが使うため候補に含めない
 PORTS = [8765] + list(range(8767, 8777))
@@ -52,7 +51,7 @@ def bind():
     """(server, port) を返す。すでに本アプリが起動中なら (None, port) を返す。"""
     for port in PORTS:
         try:
-            return ThreadingHTTPServer(('127.0.0.1', port), Handler), port
+            return AppServer(('127.0.0.1', port), Handler), port
         except OSError:
             if is_this_app(port):
                 return None, port

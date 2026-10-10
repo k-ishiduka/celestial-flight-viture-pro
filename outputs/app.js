@@ -9,6 +9,8 @@ import { sensorView } from './heading.js';
 import { NightMusic } from './music.js';
 import { adaptSpeechEngine } from './server-features.js';
 import { FavoritePlaces } from './favorite-places.js';
+import { MeteorShowerSky } from './meteor-showers.js';
+import { setupMeteorShowerUI } from './meteor-shower-ui.js';
 const $ = id => document.getElementById(id),
   canvas = $('sky');
 const previewMode = new URLSearchParams(location.search).has('preview');
@@ -23,6 +25,7 @@ const preferenceIDs = [
   'names',
   'nebula',
   'meteors',
+  'meteorShower',
   'fov',
   'depth',
   'trackingAxes',
@@ -225,6 +228,8 @@ const experience = new Experience(scene, camera, renderer);
 const observer = new Observer(scene, camera, message => experience.notice(message));
 experience.observer = observer;
 new FavoritePlaces(message => experience.notice(message));
+const meteorShowers = new MeteorShowerSky(experience.sky, observer, () => $('meteorShower').value);
+setupMeteorShowerUI(observer, message => experience.notice(message));
 experience.catalog = catalog;
 experience.catalogPositions = stars.geometry.attributes.position.array;
 camera.fov = +$('fov').value;
@@ -320,6 +325,7 @@ function frame(t) {
   experience.update(dt, t, walk);
   observer.apply(stars);
   observer.apply(milkyWay);
+  meteorShowers.update(dt);
   observer.apply(experience.sky);
   planets.update(dt, headOrientation);
   observer.apply(planets.sky);

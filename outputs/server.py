@@ -86,6 +86,13 @@ def allowed_origins(port):
     return {f'http://localhost:{port}', f'http://127.0.0.1:{port}'}
 
 
+class AppServer(ThreadingHTTPServer):
+    """待ち行列を広げたサーバー。標準の5件では、Chromeが多数のファイルを同時に要求したときに接続が切られる。"""
+
+    request_queue_size = 128
+    daemon_threads = True
+
+
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
@@ -201,4 +208,4 @@ class Handler(SimpleHTTPRequestHandler):
 
 if __name__ == '__main__':
     NARRATION_DIR.mkdir(exist_ok=True)
-    ThreadingHTTPServer(('127.0.0.1', 8765), Handler).serve_forever()
+    AppServer(('127.0.0.1', 8765), Handler).serve_forever()
