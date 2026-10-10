@@ -1,7 +1,7 @@
-import { GuidedView } from './guided-view.js?v=29';
+import { GuidedView } from './guided-view.js';
 import { starReadings } from './star-readings.js';
-import { ConstellationFocus } from './constellation-focus.js?v=29';
-import { createConstellationArt, loadConstellationIllustration } from './constellation-art.js?v=29';
+import { ConstellationFocus } from './constellation-focus.js';
+import { createConstellationArt, loadConstellationIllustration } from './constellation-art.js';
 import * as T from './three.module.js';
 const $ = id => document.getElementById(id),
   r = Math.PI / 180;

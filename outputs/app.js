@@ -1,12 +1,12 @@
-import { SkyInterface } from './interface.js?v=29';
-import { SkyEnvironment } from './sky-environment.js?v=29';
-import { PlanetariumPlanets } from './planets.js?v=29';
-import { Observer } from './observer.js?v=29';
-import { Narrator } from './narrator.js?v=29';
+import { SkyInterface } from './interface.js';
+import { SkyEnvironment } from './sky-environment.js';
+import { PlanetariumPlanets } from './planets.js';
+import { Observer } from './observer.js';
+import { Narrator } from './narrator.js';
 import * as T from './three.module.js';
-import { Experience } from './experience.js?v=29';
+import { Experience } from './experience.js';
 import { sensorView } from './heading.js';
-import { NightMusic } from './music.js?v=29';
+import { NightMusic } from './music.js';
 const $ = id => document.getElementById(id),
   canvas = $('sky');
 const previewMode = new URLSearchParams(location.search).has('preview');
