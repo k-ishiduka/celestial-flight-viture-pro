@@ -1,3 +1,4 @@
+import { geocode } from './server-features.js';
 import * as T from './three.module.js';
 const $ = id => document.getElementById(id),
   r = Math.PI / 180;
@@ -127,9 +128,7 @@ export class Observer {
       const button = $('searchAddress');
       button.disabled = true;
       try {
-        const response = await fetch('/api/geocode?q=' + encodeURIComponent(q));
-        if (!response.ok) throw Error('住所検索には付属の起動ファイルで開いてください');
-        const items = await response.json();
+        const items = await geocode(q);
         $('locations').replaceChildren(
           new Option('検索結果から場所を選択', ''),
           ...items.map((x, i) => new Option(x.properties.title, String(i))),

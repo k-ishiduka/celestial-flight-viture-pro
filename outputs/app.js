@@ -7,6 +7,7 @@ import * as T from './three.module.js';
 import { Experience } from './experience.js';
 import { sensorView } from './heading.js';
 import { NightMusic } from './music.js';
+import { adaptSpeechEngine } from './server-features.js';
 const $ = id => document.getElementById(id),
   canvas = $('sky');
 const previewMode = new URLSearchParams(location.search).has('preview');
@@ -464,6 +465,7 @@ addEventListener('keydown', e => {
 });
 const music = new NightMusic(message => experience.notice(message));
 experience.narrator = new Narrator(experience, music);
+adaptSpeechEngine();
 // Pro-only WebHID transport, retaining the already-granted Chrome permission.
 let reportCount = 0,
   validCount = 0,
