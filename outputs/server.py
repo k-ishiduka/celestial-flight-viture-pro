@@ -163,7 +163,10 @@ class Handler(SimpleHTTPRequestHandler):
         path = urlparse(self.path)
         if path.path == '/api/health':
             cached = len(list(NARRATION_DIR.glob('*.wav')))
-            return self.send_json({'status': 'ready', 'naturalVoice': 'local', 'cachedPhrases': cached})
+            voice_ready = (ROOT.parent / 'work' / 'voice-bundle.json').is_file()
+            return self.send_json(
+                {'status': 'ready', 'naturalVoice': 'local', 'voiceReady': voice_ready, 'cachedPhrases': cached}
+            )
         if path.path == '/api/geocode':
             return self.geocode(parse_qs(path.query).get('q', [''])[0].strip()[:200])
         return super().do_GET()

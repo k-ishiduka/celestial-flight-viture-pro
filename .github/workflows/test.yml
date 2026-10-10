@@ -17,3 +17,9 @@ jobs:
       - run: npm ci
       - run: npm run format:check
       - run: npm test
+      - run: npm run build:standalone
+      - run: cd dist && zip -qr ../celestial-flight-standalone.zip .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: celestial-flight-standalone
+          path: celestial-flight-standalone.zip
