@@ -31,9 +31,11 @@ export class NightMusic {
     $('nextTrack').onclick = () => this.next(true);
     this.audio.addEventListener('playing', () => {
       $('audio').textContent = '音楽を止める';
+      $('audio').setAttribute('aria-pressed', 'true');
     });
     this.audio.addEventListener('pause', () => {
-      $('audio').textContent = '夜空の曲を再生';
+      $('audio').textContent = '音楽';
+      $('audio').setAttribute('aria-pressed', 'false');
     });
     this.audio.addEventListener('ended', () => this.next(false));
     this.audio.addEventListener('error', () =>
@@ -87,7 +89,7 @@ export class NightMusic {
     try {
       await this.audio.play();
     } catch {
-      this.notice('「夜空の曲を再生」をもう一度押してください。');
+      this.notice('「音楽」をもう一度押してください。');
     }
   }
   next(manual) {

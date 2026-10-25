@@ -188,7 +188,8 @@ export class Experience {
     setConstellations();
     $('names').onchange = () => (this.names.visible = $('names').checked);
     addEventListener('keydown', e => {
-      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
+      if (e.target.closest?.('[role="dialog"]') || ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName))
+        return;
       this.keys.add(e.code);
       if (e.code.startsWith('Arrow')) e.preventDefault();
       if (e.code === 'KeyI') $('inspect').click();

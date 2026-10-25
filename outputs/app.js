@@ -445,7 +445,8 @@ function recenter() {
 }
 function togglePause() {
   walk = !walk;
-  $('pause').textContent = walk ? '航行を止める' : '航行を再開';
+  $('pause').textContent = walk ? '一時停止' : '再開';
+  $('pause').setAttribute('aria-pressed', String(!walk));
 }
 async function full() {
   try {
@@ -462,14 +463,13 @@ $('start').onclick = async () => {
 $('hide').onclick = () => $('ui').classList.add('hidden');
 $('center').onclick = recenter;
 $('pause').onclick = togglePause;
-$('info').onclick = () => ($('help').style.display = 'block');
-$('close').onclick = () => ($('help').style.display = 'none');
 addEventListener('keydown', e => {
-  if (['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(e.target.tagName)) return;
+  if (e.target.closest?.('[role="dialog"]') || ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName))
+    return;
   if (e.code === 'KeyH') $('ui').classList.toggle('hidden');
   if (e.code === 'KeyR') recenter();
   if (e.code === 'KeyF') full();
-  if (e.code === 'Space') {
+  if (e.code === 'Space' && !['BUTTON', 'A', 'SUMMARY'].includes(e.target.tagName)) {
     e.preventDefault();
     togglePause();
   }
