@@ -34,7 +34,11 @@
       </symbol>
       <symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"></path></symbol>
     </svg>
-    <canvas aria-label="日時と場所に合わせて動く星空" id="sky"></canvas>
+    <canvas
+      aria-label="星座の線や名前をクリックして選択。ドラッグで見渡せます"
+      id="sky"
+      tabindex="0"
+    ></canvas>
     <div id="loading" role="status">
       <div class="loading-orbit"></div>
       <strong>夜の航路</strong>
@@ -85,6 +89,15 @@
         <h1 id="routeTitle">星々の海へ。</h1>
         <div id="card"></div>
         <div id="skyConditions"></div>
+        <button
+          class="target-actions"
+          id="targetActions"
+          aria-controls="selectionPanel"
+          aria-expanded="false"
+        >
+          この天体の操作 <span aria-hidden="true">↗</span>
+        </button>
+        <p class="selection-hint">空の星座をクリック／タップで選択</p>
       </section>
       <div aria-label="視線の方角" class="compass" id="compassReadout"></div>
       <div
@@ -120,6 +133,34 @@
         <div aria-label="検索結果" id="searchResults" role="group"></div>
         <p class="quiet">↑ ↓ で選択 · Enter で移動 · Esc で閉じる</p>
       </div>
+      <aside
+        id="selectionPanel"
+        class="floating-panel selection-panel"
+        hidden
+        role="dialog"
+        aria-labelledby="selectionTitle"
+        aria-describedby="selectionDescription"
+        tabindex="-1"
+      >
+        <div class="panel-heading">
+          <div>
+            <small id="selectionKind">選択した星座</small>
+            <h2 id="selectionTitle"></h2>
+          </div>
+          <button id="selectionClose" class="icon-button" aria-label="天体の操作を閉じる">
+            <svg aria-hidden="true" class="icon"><use href="#icon-close"></use></svg>
+          </button>
+        </div>
+        <p id="selectionDescription"></p>
+        <div class="selection-actions">
+          <button id="selectionSpeak" data-selection-action="speak">この星座を解説</button>
+          <button id="selectionZoom" data-selection-action="zoom">大きく見る</button>
+          <button data-selection-action="tour">ここから音声で星座を巡る</button>
+          <button data-selection-action="art">星座図と一緒に見る</button>
+          <button data-selection-action="overview" hidden>太陽系全体に戻る</button>
+        </div>
+        <p class="quiet">選択中は航行を止めています。Esc または × で閉じます。</p>
+      </aside>
       <aside
         aria-label="星空の設定"
         class="floating-panel"
@@ -627,8 +668,8 @@
         設定の「星空・移動」で過ごし方を選べます。「音・解説」には正面の解説と音声つきの星座巡り、「操作・グラス」には画像保存とグラスの接続があります。日時と時間の操作は地上観測・太陽系で表示します。
       </p>
       <p>
-        H：操作表示、F：全画面、R：頭の正面、I：正面を解説、Space：航行・時間の再生／停止。検索は /
-        キーから開けます。表示を隠しても画面をタップすると戻ります。
+        H：操作表示、F：全画面、R：頭の正面、I：正面を解説、クリック／タップ：天体を選択、ドラッグ：見渡す。Space：航行・時間の再生／停止。検索は
+        / キーから開けます。表示を隠しても画面をタップすると戻ります。
       </p>
       <p>
         118,216個の恒星は星表に基づきます。天の川を密にする微光、飛行の手前の光、流れ星は演出です。地上の空は歳差・章動を含む方角を計算します。大気・月の表面・太陽系の惑星サイズと照明には視認性のための表現上の調整があります。

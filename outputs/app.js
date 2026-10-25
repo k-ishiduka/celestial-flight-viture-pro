@@ -1,4 +1,5 @@
 import { SkyInterface } from './interface.js';
+import { SkyGesture, pickingViewport } from './sky-picking.js';
 import { SkyEnvironment } from './sky-environment.js';
 import { PlanetariumPlanets } from './planets.js';
 import { Observer } from './observer.js';
@@ -348,7 +349,8 @@ function frame(t) {
   last = t;
   if (walk) elapsed += dt;
   observer.update(clockDelta);
-  [yaw, pitch] = experience.steer(dt, yaw, pitch, walk);
+  const travelling = walk && !experience.selectionOpen && !gesture.pointers.size;
+  [yaw, pitch] = experience.steer(dt, yaw, pitch, travelling);
   let live = raw && t - sensorAt < 1500;
   let sy = 0,
     sp = 0,
@@ -369,7 +371,7 @@ function frame(t) {
   experience.guide.update(camera, dt, headOrientation);
   experience.pilotYaw = yaw;
   experience.pilotPitch = pitch;
-  experience.update(dt, t, walk);
+  experience.update(dt, t, travelling);
   observer.apply(stars);
   observer.apply(milkyWay);
   meteorShowers.update(dt);
@@ -433,38 +435,50 @@ function frame(t) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-let dragging = false,
-  x = 0,
-  y = 0,
-  dragDistance = 0;
+const gesture = new SkyGesture();
+let x = 0,
+  y = 0;
 canvas.onpointerdown = e => {
-  dragging = true;
-  dragDistance = 0;
+  gesture.down(e);
   x = e.clientX;
   y = e.clientY;
-  canvas.setPointerCapture(e.pointerId);
+  if (e.button === 0) canvas.setPointerCapture(e.pointerId);
 };
 canvas.onpointermove = e => {
-  if (!dragging) return;
-  dragDistance += Math.abs(e.clientX - x) + Math.abs(e.clientY - y);
-  if (planets.mode === 'solar') {
-    planets.drag(e.clientX - x, e.clientY - y);
-    x = e.clientX;
-    y = e.clientY;
-    return;
-  }
-  experience.cancelTurn();
-  if (!experience.narrator.speaking) experience.guide.interrupt();
-  yaw += (e.clientX - x) * 0.003;
-  pitch = T.MathUtils.clamp(pitch + (e.clientY - y) * 0.003, -1.4, 1.4);
+  gesture.move(e);
+  if (gesture.tap?.id !== e.pointerId || gesture.tap.distance <= 7) return;
+  const dx = e.clientX - x,
+    dy = e.clientY - y;
   x = e.clientX;
   y = e.clientY;
+  if (planets.mode === 'solar') return planets.drag(dx, dy);
+  experience.cancelTurn();
+  if (!experience.narrator.speaking) experience.guide.interrupt();
+  yaw += dx * 0.003;
+  pitch = T.MathUtils.clamp(pitch + dy * 0.003, -1.4, 1.4);
 };
-canvas.onpointerup = () => {
-  dragging = false;
-  if (dragDistance < 4) $('ui').classList.remove('hidden');
+canvas.onpointerup = e => {
+  if (!gesture.up(e)) return;
+  const wasHidden = $('ui').classList.contains('hidden');
+  $('ui').classList.remove('hidden');
+  // The first tap in the unobstructed view only brings back the controls.
+  if (wasHidden) return;
+  const view = pickingViewport(
+    e.clientX,
+    e.clientY,
+    canvas.getBoundingClientRect(),
+    planets.mode === 'solar' ? planets.solarCamera : camera,
+    $('mode').value === 'sbs' ? stereo : null,
+  );
+  interfaceView.selectAt(view, e.pointerType !== 'mouse');
 };
-canvas.onpointercancel = () => (dragging = false);
+canvas.onpointercancel = e => gesture.cancel(e);
+canvas.onlostpointercapture = e => gesture.cancel(e);
+canvas.ondblclick = e => e.preventDefault();
+addEventListener('blur', () => {
+  gesture.pointers.clear();
+  gesture.tap = null;
+});
 canvas.addEventListener(
   'wheel',
   e => {
@@ -698,43 +712,6 @@ $('track').onclick = async () => {
   wantsTracking = !devices.length;
   await originalTrackingClick();
 };
-function zoomTarget() {
-  if (planets.mode === 'solar') {
-    planets.zoom(-150);
-    return;
-  }
-  experience.narrator.stop();
-  experience.focus.enabled = false;
-  const kind = $('inspectTarget').value;
-  if (kind === 'star') {
-    const star = experience.nearestCatalogStar(camera.getWorldDirection(new T.Vector3()));
-    if (star) {
-      experience.guide.lock('star', [star.ra, star.dec]);
-      experience.notice((star.display || '星') + 'を拡大');
-    }
-  } else {
-    experience.focus.pick(false);
-    const item = experience.focus.active;
-    if (item) {
-      experience.guide.lock(item.id, [item.ra, item.dec]);
-      experience.notice(item.name + 'を拡大');
-    }
-  }
-}
-let lastTap = 0;
-canvas.addEventListener('pointerup', e => {
-  if (e.pointerType === 'mouse' || dragDistance > 8) return;
-  const now = performance.now();
-  if (now - lastTap < 350) zoomTarget();
-  lastTap = now;
-});
-canvas.addEventListener('dblclick', e => {
-  e.preventDefault();
-  zoomTarget();
-});
-canvas.addEventListener('pointerdown', () => {
-  if (!experience.narrator.speaking) experience.guide.release();
-});
 canvas.addEventListener('wheel', () => {
   if (!experience.narrator.speaking) experience.guide.release();
 });

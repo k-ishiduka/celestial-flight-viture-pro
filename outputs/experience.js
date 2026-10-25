@@ -225,7 +225,7 @@ export class Experience {
     this.currentDestination = key;
     this.narrator?.say(key, d);
   }
-  nextTour() {
+  tourKeys() {
     const kind = $('tourKind').value;
     let pools = {
       galactic: ['core', 'cygnus', 'orion', 'pleiades', 'andromeda'],
@@ -241,6 +241,11 @@ export class Experience {
         const d = this.routes[k];
         return d && this.observer.vector(eq(d[0], d[1])).y > 900;
       });
+    return keys;
+  }
+  nextTour() {
+    const kind = $('tourKind').value;
+    const keys = this.tourKeys();
     if (!keys.length) {
       this.notice('この地点で見える候補がありません。ツアーを88星座に変更してください。');
       return;

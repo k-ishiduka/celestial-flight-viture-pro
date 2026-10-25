@@ -1209,3 +1209,88 @@ summary {
     grid-column: 2;
   }
 }
+
+/* Direct sky selection shares the panel behavior without adding another permanent toolbar. */
+.target-actions {
+  margin-top: 14px;
+  padding: 8px 12px;
+  font-size: 11px;
+  background: #101c24bb;
+}
+.selection-hint {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.7;
+  margin: 8px 0 0;
+}
+#selectionPanel {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  width: 340px;
+}
+#selectionPanel .panel-heading {
+  padding-bottom: 10px;
+}
+#selectionDescription {
+  margin: 0;
+  padding: 0 22px 18px;
+  font-size: 12px;
+  line-height: 1.9;
+  color: #b9c7c8;
+}
+.selection-actions {
+  display: grid;
+  gap: 8px;
+  padding: 0 22px;
+}
+.selection-actions button {
+  text-align: left;
+  padding: 12px 14px;
+  white-space: normal;
+}
+#selectionSpeak {
+  background: var(--accent);
+  color: #142823;
+}
+#selectionPanel > .quiet {
+  margin: 0;
+  padding: 16px 22px 20px;
+  font-size: 10px;
+}
+#sky:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -4px;
+}
+@media (max-width: 600px) {
+  #selectionPanel {
+    top: auto;
+    bottom: 12px;
+    left: 10px;
+    right: 10px;
+    width: auto;
+    max-height: calc(100dvh - 150px);
+  }
+  body:has(#selectionPanel:not([hidden])) .bottom-dock {
+    visibility: hidden;
+  }
+  .target-actions {
+    margin-top: 10px;
+  }
+  .selection-hint {
+    font-size: 9px;
+  }
+}
+@media (max-height: 500px) {
+  #selectionPanel {
+    top: 62px;
+    bottom: 10px;
+    max-height: calc(100dvh - 72px);
+  }
+  body:has(#selectionPanel:not([hidden])) .bottom-dock {
+    visibility: hidden;
+  }
+  .selection-hint {
+    display: none;
+  }
+}

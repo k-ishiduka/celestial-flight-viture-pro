@@ -1,5 +1,7 @@
 import * as T from './three.module.js';
 import { ViewModes } from './view-modes.js';
+import { pickConstellation, pickPlanet } from './sky-picking.js';
+import { constellationStories } from './constellation-stories.js';
 import { normalizeSkyQuery, tonightValue, rangeLabel } from './interface-utils.js';
 const $ = id => document.getElementById(id);
 const emit = id => $(id).dispatchEvent(new Event('change', { bubbles: true }));
@@ -17,6 +19,7 @@ export class SkyInterface {
     this.modes = new ViewModes(experience, observer, planets, pilot, savedViews);
     observer.setView = experience.setView = view => this.setView(view);
     experience.prepareNavigation = () => {
+      if (this.panel === 'selectionPanel') this.closePanel(false);
       const pose = pilot.capture();
       experience.narrator?.stop();
       experience.guide.interrupt();
@@ -36,6 +39,26 @@ export class SkyInterface {
     this.query = '';
     this.panel = null;
     this.panelTrigger = null;
+    this.selectionLine = new T.LineSegments(
+      new T.BufferGeometry(),
+      new T.LineBasicMaterial({
+        color: 0xf0e9b4,
+        transparent: true,
+        opacity: 0.95,
+        depthWrite: false,
+      }),
+    );
+    this.selectionLine.visible = false;
+    this.selectionLine.renderOrder = 2;
+    experience.sky.add(this.selectionLine);
+    $('selectionClose').onclick = event => {
+      if (!this.isRepeatedSelection(event)) this.closePanel();
+    };
+    $('targetActions').onclick = () => this.showTarget(this.currentTarget(), $('targetActions'));
+    for (const action of ['speak', 'zoom', 'tour', 'art', 'overview'])
+      document.querySelector(`[data-selection-action="${action}"]`).onclick = event =>
+        this.actOnSelection(action, event);
+
     $('settingsButton').onclick = () => this.togglePanel('settings', $('settingsButton'));
     $('settingsClose').onclick = () => this.closePanel();
     $('searchOpen').onclick = () => this.togglePanel('searchPanel', $('searchOpen'));
@@ -177,7 +200,7 @@ export class SkyInterface {
       if (this.panel && !$(this.panel).contains(event.target) && !this.panelTrigger?.contains(event.target))
         this.closePanel(false);
     });
-    for (const id of ['settings', 'searchPanel', 'help']) {
+    for (const id of ['settings', 'searchPanel', 'selectionPanel', 'help']) {
       $(id).addEventListener('keydown', event => {
         // Arrow keys in panels scroll/select; they must never steer the sky.
         if (event.key.startsWith('Arrow')) event.stopPropagation();
@@ -243,8 +266,10 @@ export class SkyInterface {
     this.panelTrigger = trigger;
     if (id === 'settings') $('settings').style.display = 'flex';
     else $(id).hidden = false;
-    const button = $(id === 'settings' ? 'settingsButton' : 'searchOpen');
+    const button =
+      id === 'selectionPanel' ? $('targetActions') : $(id === 'settings' ? 'settingsButton' : 'searchOpen');
     button.setAttribute('aria-expanded', 'true');
+    if (id === 'selectionPanel') this.e.selectionOpen = true;
     if (id === 'searchPanel') {
       this.search();
       $('skySearch').focus();
@@ -260,7 +285,13 @@ export class SkyInterface {
       trigger = this.panelTrigger;
     if (id === 'settings') $('settings').style.display = 'none';
     else $(id).hidden = true;
-    $(id === 'settings' ? 'settingsButton' : 'searchOpen').setAttribute('aria-expanded', 'false');
+    const button =
+      id === 'selectionPanel' ? $('targetActions') : $(id === 'settings' ? 'settingsButton' : 'searchOpen');
+    button.setAttribute('aria-expanded', 'false');
+    if (id === 'selectionPanel') {
+      this.e.selectionOpen = false;
+      this.selectionLine.visible = false;
+    }
     this.panel = null;
     this.panelTrigger = null;
     if (restore) trigger?.focus();
@@ -325,6 +356,8 @@ export class SkyInterface {
     $('timePlay').setAttribute('aria-pressed', String(Number($('timeFlow').value) !== 0));
   }
   setView(view) {
+    if (view === this.modes.current) return;
+    this.closePanel(false);
     if (!this.modes.switch(view)) return;
     this.transition?.cancel();
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -334,6 +367,116 @@ export class SkyInterface {
       });
     }
     this.update(1, 0);
+  }
+  currentTarget() {
+    if (this.planets.mode === 'solar') {
+      const planet = this.planets.objects.find(p => p.body === $('planetTarget').value);
+      return planet ? { planet } : null;
+    }
+    const key = this.e.currentDestination;
+    return this.e.routes[key] ? { key, route: this.e.routes[key] } : null;
+  }
+  selectAt(view, touch = false) {
+    if (!view) return;
+    let target;
+    if (this.planets.mode === 'solar') {
+      const planet = pickPlanet(view, this.planets);
+      if (planet) target = { planet };
+    } else {
+      const item = pickConstellation(view, this.e, touch ? 28 : 20);
+      if (item) target = { key: 'c_' + item.id, route: this.e.routes['c_' + item.id] };
+    }
+    if (!target) {
+      this.closePanel(false);
+      this.e.notice(
+        this.planets.mode === 'solar'
+          ? '惑星やその名前をクリックすると選べます'
+          : '星座の線や名前をクリックすると選べます。「星を探す」からも選択できます',
+      );
+      return;
+    }
+    this.showTarget(target, $('sky'));
+    this.selectionPoint = { x: view.clientX, y: view.clientY, at: performance.now() };
+  }
+  showTarget(target, trigger, frame = false) {
+    if (!target) return;
+    const e = this.e;
+    e.prepareNavigation();
+    e.keys.clear();
+    $('ui').classList.remove('hidden');
+    this.selectedTarget = target;
+    this.selectionPoint = null;
+    const planet = target.planet;
+    const id = planet
+      ? null
+      : { core: 'Sgr', cygnus: 'Cyg', orion: 'Ori', pleiades: 'Tau', andromeda: 'And' }[target.key] ||
+        target.key.replace(/^c_/, '');
+    this.selectedID = id;
+    const constellation = !planet && !!e.constellationAtlas[id];
+    if (!planet) {
+      e.currentDestination = target.key;
+      $('destination').value = target.key;
+      e.tourTime = 0;
+      $('card').textContent = constellationStories[id] || target.route[3] || '';
+    }
+    $('selectionKind').textContent = planet
+      ? '選択した惑星'
+      : constellation
+        ? '選択した星座'
+        : '選択した天体';
+    $('selectionTitle').textContent = planet ? planet.name : target.route[2];
+    $('selectionDescription').textContent = planet
+      ? '近くへ移動して、軌道や表面を眺められます。'
+      : constellationStories[id] || target.route[3] || 'この天体を大きく眺めたり、解説を聴いたりできます。';
+    for (const action of ['speak', 'tour', 'art', 'overview']) {
+      document.querySelector(`[data-selection-action="${action}"]`).hidden =
+        action === 'overview' ? !planet : action === 'speak' ? !!planet : !constellation;
+    }
+    this.openPanel('selectionPanel', trigger);
+    if (constellation) {
+      this.selectionLine.geometry = e.constellationAtlas[id].geometry;
+      this.selectionLine.visible = true;
+    }
+    if (frame && !planet) e.guide.lock(id, target.route);
+    $('selectionSpeak').textContent = constellation ? 'この星座を解説' : 'この天体を解説';
+    $('selectionZoom').focus();
+    this.update(1, 0);
+  }
+  isRepeatedSelection(event) {
+    const point = this.selectionPoint;
+    return (
+      point &&
+      event?.detail > 0 &&
+      performance.now() - point.at < 400 &&
+      Math.hypot(event.clientX - point.x, event.clientY - point.y) < 10
+    );
+  }
+  actOnSelection(action, event) {
+    if (this.isRepeatedSelection(event)) return;
+    const target = this.selectedTarget;
+    if (!target) return;
+    const e = this.e,
+      id = this.selectedID;
+    this.closePanel();
+    if (target.planet) {
+      change('planetTarget', action === 'overview' ? 'all' : target.planet.body);
+      return;
+    }
+    e.prepareNavigation();
+    if (action === 'art') change('artDisplay', 'always');
+    if (action === 'tour') {
+      // Continue the visible-constellation pool from the selected item, not the first one.
+      $('tourKind').value = 'all';
+      e.tourIndex = e.tourKeys().indexOf(target.key);
+      e.tourTime = 0;
+      this.modes.pilot.setPaused(false);
+      e.narrator.enabled = true;
+      e.narrator.say(target.key, target.route, true);
+    } else if (action === 'speak') {
+      e.narrator.say(target.key, target.route, true);
+    } else {
+      e.guide.lock(id, target.route);
+    }
   }
   location() {
     $('locationName').textContent =
@@ -368,16 +511,7 @@ export class SkyInterface {
       button.append(name, kind);
       button.onclick = () => {
         if (this.planets.mode === 'solar') this.setView('space');
-        this.e.narrator.stop();
-        this.e.focus.restore();
-        this.e.focus.enabled = false;
-        this.e.go(key);
-        $('destination').dispatchEvent(new Event('change', { bubbles: true }));
-        const id =
-          { core: 'Sgr', cygnus: 'Cyg', orion: 'Ori', pleiades: 'Tau', andromeda: 'And' }[key] ||
-          key.replace(/^c_/, '');
-        this.e.guide.lock(id, d);
-        this.closePanel();
+        this.showTarget({ key, route: d }, $('searchOpen'), true);
       };
       root.append(button);
     }
@@ -404,6 +538,10 @@ export class SkyInterface {
     }
     $('ui').dataset.viewState = view;
     $('card').hidden = solar;
+    $('targetActions').disabled = !this.currentTarget();
+    document.querySelector('.selection-hint').textContent = solar
+      ? '惑星や名前をクリック／タップで選択'
+      : '空の星座をクリック／タップで選択';
     this.syncControls(solar);
     const current = this.e.routes[this.e.currentDestination];
     const selected = this.planets.objects.find(p => p.body === $('planetTarget').value);
@@ -422,7 +560,7 @@ export class SkyInterface {
     $('timeReadout').title =
       `観測地点の時刻（UTC${Number($('timezone').value) >= 0 ? '+' : ''}${$('timezone').value}）`;
     $('solarControls').hidden = !solar;
-    $('trackingBadge').textContent = live ? '頭の動きに追従中' : 'ドラッグで見渡す';
+    $('trackingBadge').textContent = live ? '頭の動きに追従中' : 'クリックで選択 · ドラッグで見渡す';
     $('trackingBadge').classList.toggle('connected', live);
     const camera = solar ? this.planets.solarCamera : this.e.camera;
     camera.getWorldDirection(this.direction);
