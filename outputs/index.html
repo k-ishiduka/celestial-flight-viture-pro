@@ -182,7 +182,8 @@
         </nav>
         <div class="settings-body">
           <div aria-labelledby="tab-look" data-settings="look" id="panel-look" role="tabpanel">
-            <section class="setting-group">
+            <p class="quiet" id="viewSettingsNote"></p>
+            <section class="setting-group" data-views="space">
               <h3>星空での過ごし方</h3>
               <div aria-label="星空での過ごし方" class="presets">
                 <button aria-pressed="false" data-preset="relax">
@@ -209,7 +210,7 @@
                 ><span>天の川の微光</span><input checked="" id="nebula" type="checkbox"
               /></label>
             </section>
-            <section class="setting-group">
+            <section class="setting-group" data-views="space observe">
               <h3>星図を重ねる</h3>
               <label class="setting-row"
                 ><span>星座を線で結ぶ</span><input checked="" id="lines" type="checkbox" /></label
@@ -228,7 +229,7 @@
                 ><input id="artOpacity" max="0.7" min="0.08" step="0.01" type="range" value="0.28" /></label
               ><input hidden="" id="art" type="checkbox" />
             </section>
-            <details class="advanced">
+            <details class="advanced" data-views="space">
               <summary>移動を細かく調整</summary>
               <div>
                 <label class="setting-row"
@@ -296,7 +297,7 @@
               ><label class="setting-row"
                 ><span>昼夜の明るさを再現</span><input id="atmosphere" type="checkbox"
               /></label>
-              <p class="quiet">標準では日中の日時でも星空を表示します。</p>
+              <p class="quiet" data-views="observe">標準では日中の日時でも星空を表示します。</p>
               <details class="advanced">
                 <summary>季節・時差を指定</summary>
                 <div>
@@ -403,7 +404,7 @@
                 見ている方向を調べるなら「正面」、次々に案内を聴くなら「音声つきで巡る」を選びます。
               </p>
             </section>
-            <section class="setting-group">
+            <section class="setting-group" data-views="space observe">
               <h3>解説の声</h3>
               <label class="setting-row"
                 ><span>解説の音声</span
@@ -626,7 +627,7 @@
         設定の「星空・移動」で過ごし方を選べます。「音・解説」には正面の解説と音声つきの星座巡り、「操作・グラス」には画像保存とグラスの接続があります。日時と時間の操作は地上観測・太陽系で表示します。
       </p>
       <p>
-        H：操作表示、F：全画面、R：頭の正面、I：正面を解説、Space：航行停止。検索は /
+        H：操作表示、F：全画面、R：頭の正面、I：正面を解説、Space：航行・時間の再生／停止。検索は /
         キーから開けます。表示を隠しても画面をタップすると戻ります。
       </p>
       <p>

@@ -19,24 +19,24 @@ export function setupEclipseUI(observer, environment, experience, notice) {
     $('eclipseStatus').textContent = describeEclipse(eclipse, timezone);
     if (!eclipse) return notice('この地点で見られる食は、近いうちには見つかりませんでした');
 
+    observer.prepareObservation();
     // 食の最大の瞬間へ(日時の入力欄は現地時刻)
     $('date').value = new Date(eclipse.peak.getTime() + timezone * 3600000).toISOString().slice(0, 19);
     $('date').dispatchEvent(new Event('change', { bubbles: true }));
     $('timeFlow').value = '0';
     $('timeFlow').dispatchEvent(new Event('change', { bubbles: true }));
-    $('observe').checked = true;
-    $('observe').dispatchEvent(new Event('change', { bubbles: true }));
+    observer.update(0);
     if (type === 'solar') {
       // 昼の空が暗くなる様子も見えるように、昼夜の明るさの再現を入れる
       $('atmosphere').checked = true;
       $('atmosphere').dispatchEvent(new Event('change', { bubbles: true }));
     }
     notice(type === 'solar' ? '日食の最大の瞬間へ移動しました' : '月食の最大の瞬間へ移動しました');
-    // 日時を反映した位置が計算されるのを待ってから、太陽・月へ視線を向ける
-    setTimeout(() => {
-      const direction = type === 'solar' ? environment.sunDirection() : environment.moonDirection();
-      experience.lookAt(direction, type === 'solar' ? 10 : 10);
-    }, 400);
+    // Update synchronously: a delayed callback must never turn a different mode's camera.
+    environment.age = Infinity;
+    environment.update(0, false);
+    const direction = type === 'solar' ? environment.sunDirection() : environment.moonDirection();
+    experience.lookAt(direction, 10);
   };
 
   $('nextSolarEclipse').onclick = () => jump('solar');

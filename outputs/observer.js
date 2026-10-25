@@ -77,18 +77,10 @@ export class Observer {
       if (running) this.flowBeforePause = Number($('timeFlow').value);
       $('timeFlow').value = running ? '0' : String(this.flowBeforePause);
       $('timePlay').textContent = running ? '時間を進める' : '時間を止める';
-      if (!running && $('planetMode').value !== 'solar') {
-        $('observe').checked = true;
-        $('observe').dispatchEvent(new Event('change'));
-      }
     };
     $('timeFlow').onchange = () => {
       if (Number($('timeFlow').value)) {
         this.flowBeforePause = Number($('timeFlow').value);
-        if ($('planetMode').value !== 'solar') {
-          $('observe').checked = true;
-          $('observe').dispatchEvent(new Event('change'));
-        }
       }
       $('timePlay').textContent = Number($('timeFlow').value) ? '時間を止める' : '時間を進める';
     };
@@ -166,7 +158,7 @@ export class Observer {
     }
   }
   update(dt) {
-    const flow = Number($('timeFlow').value);
+    const flow = this.active || $('planetMode').value === 'solar' ? Number($('timeFlow').value) : 0;
     this.date = new Date(this.date.getTime() + dt * 1000 * flow);
     this.tick += dt;
     if (flow && this.tick > 1) {

@@ -125,6 +125,7 @@ export class Experience {
       this.go($('destination').value);
     };
     $('journey').onchange = () => {
+      this.prepareNavigation?.();
       this.tourTime = 0;
       this.tourIndex = -1;
       if (['tour', 'cruise'].includes($('journey').value)) this.nextTour();
@@ -143,8 +144,9 @@ export class Experience {
     $('fov').oninput = () => {
       this.cancelTurn();
       this.guide.interrupt();
-      camera.fov = +$('fov').value;
-      camera.updateProjectionMatrix();
+      const viewCamera = this.solarMode ? this.solarCamera : camera;
+      viewCamera.fov = +$('fov').value;
+      viewCamera.updateProjectionMatrix();
     };
     this.art = new T.Group();
     this.sky.add(this.art);
@@ -539,7 +541,8 @@ export class Experience {
       $('destination').appendChild(starOptions);
       try {
         const saved = JSON.parse(localStorage.getItem('celestial-preferences') || '{}');
-        if (this.routes[saved.destination]) this.go(saved.destination);
+        if (!this.observer?.active && !this.solarMode && this.routes[saved.destination])
+          this.go(saved.destination);
       } catch {}
       this.constellationNames.visible = $('constellationLabels').checked;
       for (const star of named) {

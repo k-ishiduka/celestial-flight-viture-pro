@@ -137,8 +137,7 @@ export class Narrator {
     if (!this.enabled && !force) return;
     if ($('planetMode')?.value === 'solar') {
       const continueGuide = this.enabled;
-      $('planetMode').value = 'off';
-      $('planetMode').dispatchEvent(new Event('change'));
+      this.experience.setView('space');
       this.enabled = continueGuide;
     }
     this.refresh();

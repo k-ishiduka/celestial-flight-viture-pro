@@ -21,14 +21,14 @@ export function setupMeteorShowerUI(observer, notice) {
       activeShowers(date)[0]?.shower ||
       nextShower(date).shower;
     const night = peakNight(shower, date.getUTCFullYear());
+    observer.prepareObservation();
     $('date').value = `${night.year}-${pad(night.month)}-${pad(night.day)}T${pad(night.hour)}:00:00`;
     $('date').dispatchEvent(new Event('change', { bubbles: true }));
     $('meteorShower').value = shower.id;
     $('meteorShower').dispatchEvent(new Event('change', { bubbles: true }));
     $('timeFlow').value = '0';
     $('timeFlow').dispatchEvent(new Event('change', { bubbles: true }));
-    $('observe').checked = true;
-    $('observe').dispatchEvent(new Event('change', { bubbles: true }));
+    observer.update(0);
     notice(`${shower.name}の見ごろ(${night.month}/${night.day} ${night.hour}時ごろ)へ移動しました`);
     refresh();
   };

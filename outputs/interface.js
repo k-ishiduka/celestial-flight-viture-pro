@@ -1,4 +1,5 @@
 import * as T from './three.module.js';
+import { ViewModes } from './view-modes.js';
 import { normalizeSkyQuery, tonightValue, rangeLabel } from './interface-utils.js';
 const $ = id => document.getElementById(id);
 const emit = id => $(id).dispatchEvent(new Event('change', { bubbles: true }));
@@ -9,10 +10,26 @@ const change = (id, value) => {
   emit(id);
 };
 export class SkyInterface {
-  constructor(experience, observer, planets) {
+  constructor(experience, observer, planets, pilot, savedViews) {
     this.e = experience;
     this.observer = observer;
     this.planets = planets;
+    this.modes = new ViewModes(experience, observer, planets, pilot, savedViews);
+    observer.setView = experience.setView = view => this.setView(view);
+    experience.prepareNavigation = () => {
+      const pose = pilot.capture();
+      experience.narrator?.stop();
+      experience.guide.interrupt();
+      experience.focus.restore();
+      experience.focus.enabled = false;
+      experience.cancelTurn();
+      pilot.restore(pose);
+      if (Number($('speed').value) === 0) experience.velocity = 0;
+    };
+    observer.prepareObservation = () => {
+      this.setView('observe');
+      experience.prepareNavigation();
+    };
     this.direction = new T.Vector3();
     this.elapsed = 0;
     this.filter = 'all';
@@ -96,18 +113,22 @@ export class SkyInterface {
       button.onclick = () => {
         this.setView('space');
         const preset = button.dataset.preset;
+        change('speed', preset === 'flight' ? 0.4 : preset === 'guide' ? 0.08 : 0);
+        // Set the pool before the journey so a preset only starts one tour.
+        if (preset === 'guide') $('tourKind').value = 'all';
         change('journey', preset === 'flight' ? 'cruise' : preset === 'guide' ? 'tour' : 'walk');
-        change('speed', preset === 'flight' ? 0.4 : 0.08);
-        if (preset === 'guide') change('tourKind', 'all');
         if ($('pause').getAttribute('aria-pressed') === 'true') $('pause').click();
         experience.notice(button.textContent.trim() + 'に切り替えました');
       };
     });
     $('tonight').onclick = () => {
+      this.observer.prepareObservation();
       change('timeFlow', '0');
       change('season', '');
       change('date', tonightValue(new Date(), Number($('timezone').value)));
-      this.setView('observe');
+      this.observer.update(0);
+      const target = this.modes.firstGroundTarget();
+      if (target) experience.go(target);
       experience.notice('観測地点の今夜21時の空に切り替えました');
     };
     this.rangeOutputs = [];
@@ -268,6 +289,12 @@ export class SkyInterface {
   }
   syncControls(solar) {
     const journey = $('journey').value;
+    const view = this.modes.current;
+    for (const group of document.querySelectorAll('[data-views]'))
+      group.hidden = !group.dataset.views.split(' ').includes(view);
+    $('viewSettingsNote').textContent =
+      `${{ space: '星空', observe: '地上観測', solar: '太陽系' }[view]}の見え方を調整しています。切り替えると、それぞれの設定と視点に戻ります。`;
+    $('viewSettingsNote').hidden = false;
     for (const button of document.querySelectorAll('[data-preset]')) {
       const mode = { relax: 'walk', flight: 'cruise', guide: 'tour' }[button.dataset.preset];
       button.setAttribute(
@@ -290,48 +317,21 @@ export class SkyInterface {
     showRow('neuralVoice', $('speechEngine').value === 'neural');
     showRow('voice', $('speechEngine').value === 'system');
     showRow('depth', $('mode').value === 'sbs');
+    showRow('horizonGuides', view === 'observe');
+    showRow('atmosphere', view === 'observe');
     showRow('tourKind', ['tour', 'cruise'].includes(journey));
     showRow('tourInterval', ['tour', 'cruise'].includes(journey));
     this.rangeOutputs.forEach(sync => sync());
     $('timePlay').setAttribute('aria-pressed', String(Number($('timeFlow').value) !== 0));
   }
   setView(view) {
-    this.e.narrator?.stop();
-    this.e.guide.release();
-    this.e.focus.restore();
-    this.e.focus.enabled = false;
-    if (view === 'solar') {
-      change('planetMode', 'solar');
-    } else {
-      change('planetMode', view === 'observe' ? 'sky' : 'off');
-      change('observe', view === 'observe');
-      this.observer.update(0);
-      let key = this.e.currentDestination,
-        d = this.e.routes[key];
-      if (view === 'observe' && d) {
-        const ra = (d[0] * Math.PI) / 180,
-          dec = (d[1] * Math.PI) / 180,
-          v = new T.Vector3(Math.cos(dec) * Math.cos(ra), Math.sin(dec), Math.cos(dec) * Math.sin(ra));
-        if (this.observer.vector(v).y < 0.15) {
-          let best = null,
-            highest = -2;
-          for (const item of this.e.constellationCenters) {
-            const altitude = this.observer.vector(item.vector).normalize().y;
-            if (altitude > highest) {
-              best = item;
-              highest = altitude;
-            }
-          }
-          if (best) {
-            key = 'c_' + best.id;
-            d = this.e.routes[key];
-          }
-        }
-      }
-      if (d) {
-        $('card').textContent = d[3] || '名前をたどって、その星の物語へ。';
-        this.e.go(key);
-      }
+    if (!this.modes.switch(view)) return;
+    this.transition?.cancel();
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      this.transition = $('sky').animate([{ opacity: 0.35 }, { opacity: 1 }], {
+        duration: 280,
+        easing: 'ease-out',
+      });
     }
     this.update(1, 0);
   }

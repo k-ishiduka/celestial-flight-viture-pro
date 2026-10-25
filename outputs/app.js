@@ -52,8 +52,12 @@ const preferenceIDs = [
   'latitude',
   'longitude',
 ];
+let savedPreferences = {};
+let viewModes;
 try {
-  let saved = JSON.parse(localStorage.getItem('celestial-preferences') || '{}');
+  const parsed = JSON.parse(localStorage.getItem('celestial-preferences') || '{}');
+  const saved = (savedPreferences =
+    parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {});
   if (!saved.version || saved.version < 3) {
     saved.trackingAxes = 'nwu';
     saved.headInvert = false;
@@ -82,20 +86,32 @@ try {
     }
   }
 } catch {}
-document.addEventListener('change', e => {
-  if (previewMode || !preferenceIDs.includes(e.target.id)) return;
+function savePreferences() {
+  if (previewMode || viewModes?.switching) return;
   try {
+    const views = viewModes?.preferences();
     localStorage.setItem(
       'celestial-preferences',
       JSON.stringify({
-        version: 11,
+        version: 12,
         ...Object.fromEntries(
           preferenceIDs.map(id => [id, $(id).type === 'checkbox' ? $(id).checked : $(id).value]),
         ),
+        // Keep legacy startup controls tied to space, not the last visited ground view.
+        ...views?.space,
+        destination:
+          viewModes && viewModes.current !== 'space'
+            ? viewModes.states.space.destination
+            : $('destination').value,
+        views,
       }),
     );
   } catch {}
+}
+document.addEventListener('change', e => {
+  if (preferenceIDs.includes(e.target.id)) savePreferences();
 });
+document.addEventListener('celestial-viewchange', savePreferences);
 const renderer = new T.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(1);
 renderer.setClearColor(0x010207);
@@ -243,7 +259,35 @@ planets.solarScene.add(solarStars, solarMilkyWay);
 const environment = new SkyEnvironment(scene, camera, observer);
 experience.environment = environment;
 setupEclipseUI(observer, environment, experience, message => experience.notice(message));
-const interfaceView = new SkyInterface(experience, observer, planets);
+const interfaceView = new SkyInterface(
+  experience,
+  observer,
+  planets,
+  {
+    capture: () => ({
+      yaw: camera.rotation.y - headEuler.y,
+      pitch: camera.rotation.x - headEuler.x,
+      fov: camera.fov,
+      position: camera.position.toArray(),
+    }),
+    restore: pose => {
+      yaw = pose.yaw;
+      pitch = pose.pitch;
+      camera.rotation.set(pitch, yaw, 0, 'YXZ');
+      camera.position.fromArray(pose.position);
+      camera.fov = pose.fov;
+      camera.updateProjectionMatrix();
+      $('fov').value = camera.fov;
+    },
+    setPaused: paused => {
+      walk = !paused;
+      updatePauseButton();
+    },
+  },
+  savedPreferences.views,
+);
+viewModes = interfaceView.modes;
+experience.solarCamera = planets.solarCamera;
 const headEuler = new T.Euler(0, 0, 0, 'YXZ'),
   headOrientation = new T.Quaternion();
 // 軽量モード: 暗い星(7等より暗い星)を描画から外し、天の川の点を間引く。
@@ -441,10 +485,14 @@ canvas.addEventListener(
 );
 function recenter() {
   zero = raw?.slice() || null;
-  experience.go($('destination').value);
+  if (planets.mode !== 'solar') experience.go($('destination').value);
 }
 function togglePause() {
+  if (viewModes.current !== 'space') return $('timePlay').click();
   walk = !walk;
+  updatePauseButton();
+}
+function updatePauseButton() {
   $('pause').textContent = walk ? '一時停止' : '再開';
   $('pause').setAttribute('aria-pressed', String(!walk));
 }

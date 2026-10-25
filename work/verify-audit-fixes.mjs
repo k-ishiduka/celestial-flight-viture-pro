@@ -58,8 +58,10 @@ assert.equal(+observer.date, instant);
 assert.equal(controls.date.value, new Date(instant - 5 * 3600000).toISOString().slice(0, 19));
 controls.timeFlow.value = '3600';
 controls.timeFlow.onchange();
-assert.equal(observer.active, true);
+assert.equal(observer.active, false);
+observer.update(1);
+assert.equal(+observer.date, instant);
 assert.equal(observer.flowBeforePause, 3600);
 console.log(
-  'Manual zoom remains stable; invalid dates recover; timezone preserves instant; time-flow enables observation: PASS',
+  'Manual zoom remains stable; invalid dates recover; timezone preserves instant; hidden time-flow does not change modes or advance time: PASS',
 );
