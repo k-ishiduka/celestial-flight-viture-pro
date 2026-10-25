@@ -125,6 +125,7 @@ export class Experience {
       this.go($('destination').value);
     };
     $('journey').onchange = () => {
+      this.prepareNavigation?.();
       this.tourTime = 0;
       this.tourIndex = -1;
       if (['tour', 'cruise'].includes($('journey').value)) this.nextTour();
@@ -143,8 +144,9 @@ export class Experience {
     $('fov').oninput = () => {
       this.cancelTurn();
       this.guide.interrupt();
-      camera.fov = +$('fov').value;
-      camera.updateProjectionMatrix();
+      const viewCamera = this.solarMode ? this.solarCamera : camera;
+      viewCamera.fov = +$('fov').value;
+      viewCamera.updateProjectionMatrix();
     };
     this.art = new T.Group();
     this.sky.add(this.art);
@@ -188,7 +190,8 @@ export class Experience {
     setConstellations();
     $('names').onchange = () => (this.names.visible = $('names').checked);
     addEventListener('keydown', e => {
-      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
+      if (e.target.closest?.('[role="dialog"]') || ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName))
+        return;
       this.keys.add(e.code);
       if (e.code.startsWith('Arrow')) e.preventDefault();
       if (e.code === 'KeyI') $('inspect').click();
@@ -222,7 +225,7 @@ export class Experience {
     this.currentDestination = key;
     this.narrator?.say(key, d);
   }
-  nextTour() {
+  tourKeys() {
     const kind = $('tourKind').value;
     let pools = {
       galactic: ['core', 'cygnus', 'orion', 'pleiades', 'andromeda'],
@@ -238,6 +241,11 @@ export class Experience {
         const d = this.routes[k];
         return d && this.observer.vector(eq(d[0], d[1])).y > 900;
       });
+    return keys;
+  }
+  nextTour() {
+    const kind = $('tourKind').value;
+    const keys = this.tourKeys();
     if (!keys.length) {
       this.notice('この地点で見える候補がありません。ツアーを88星座に変更してください。');
       return;
@@ -538,7 +546,8 @@ export class Experience {
       $('destination').appendChild(starOptions);
       try {
         const saved = JSON.parse(localStorage.getItem('celestial-preferences') || '{}');
-        if (this.routes[saved.destination]) this.go(saved.destination);
+        if (!this.observer?.active && !this.solarMode && this.routes[saved.destination])
+          this.go(saved.destination);
       } catch {}
       this.constellationNames.visible = $('constellationLabels').checked;
       for (const star of named) {

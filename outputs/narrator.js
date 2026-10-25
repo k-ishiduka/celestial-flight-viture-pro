@@ -66,7 +66,7 @@ export class Narrator {
     this.music.duck(false);
     this.experience.guide.release();
     this.experience.focus.endNarrated();
-    $('narrate').textContent = '日本語の星空解説';
+    $('narrate').textContent = '音声つきで星座を巡る';
     $('subtitle').textContent = '';
   }
   build(key, d) {
@@ -137,8 +137,7 @@ export class Narrator {
     if (!this.enabled && !force) return;
     if ($('planetMode')?.value === 'solar') {
       const continueGuide = this.enabled;
-      $('planetMode').value = 'off';
-      $('planetMode').dispatchEvent(new Event('change'));
+      this.experience.setView('space');
       this.enabled = continueGuide;
     }
     this.refresh();
@@ -202,7 +201,7 @@ export class Narrator {
       this.experience.guide.release();
       this.experience.focus.endNarrated();
       this.experience.tourTime = 0;
-      if (!this.enabled) $('narrate').textContent = '日本語の星空解説';
+      if (!this.enabled) $('narrate').textContent = '音声つきで星座を巡る';
     };
     const prepare = async segment => {
       if (!neural) return null;

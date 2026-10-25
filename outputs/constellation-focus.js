@@ -11,7 +11,7 @@ export class ConstellationFocus {
     this.highlight = new T.Group();
     experience.sky.add(this.highlight);
     const button = document.getElementById('inspect');
-    button.textContent = '正面の星座・星を解説';
+    button.textContent = '正面の天体を解説';
     button.onclick = () => {
       this.autoVisual = false;
       this.enabled = true;

@@ -1,37 +1,87 @@
 <!doctype html>
+
 <html lang="ja">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-    <meta name="theme-color" content="#03070d" />
+    <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport" />
+    <meta content="#03070d" name="theme-color" />
     <title>夜の航路 — VITURE Pro</title>
-    <link rel="stylesheet" href="interface.css" />
+    <link href="interface.css" rel="stylesheet" />
   </head>
   <body>
-    <canvas id="sky" aria-label="日時と場所に合わせて動く星空"></canvas>
+    <svg aria-hidden="true" class="icon-library" xmlns="http://www.w3.org/2000/svg">
+      <symbol id="icon-search" viewBox="0 0 24 24">
+        <circle cx="10.5" cy="10.5" r="6.5"></circle>
+        <path d="m16 16 5 5"></path>
+      </symbol>
+      <symbol id="icon-settings" viewBox="0 0 24 24">
+        <path d="M4 7h16M4 17h16"></path>
+        <circle cx="9" cy="7" r="3"></circle>
+        <circle cx="16" cy="17" r="3"></circle>
+      </symbol>
+      <symbol id="icon-expand" viewBox="0 0 24 24">
+        <path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"></path>
+      </symbol>
+      <symbol id="icon-star" viewBox="0 0 24 24">
+        <path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z"></path>
+      </symbol>
+      <symbol id="icon-ground" viewBox="0 0 24 24">
+        <path d="M3 18h18M4 14a8 8 0 0 1 16 0M12 3v2m-9 2 2 2m14 0 2-2"></path>
+      </symbol>
+      <symbol id="icon-orbit" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="5"></circle>
+        <ellipse cx="12" cy="12" rx="11" ry="4" transform="rotate(-30 12 12)"></ellipse>
+      </symbol>
+      <symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"></path></symbol>
+    </svg>
+    <canvas
+      aria-label="星座の線や名前をクリックして選択。ドラッグで見渡せます"
+      id="sky"
+      tabindex="0"
+    ></canvas>
     <div id="loading" role="status">
       <div class="loading-orbit"></div>
       <strong>夜の航路</strong>
       <p>星々を迎えています</p>
       <span id="loadingDetail">星表を読み込み中</span
-      ><button id="retryLoad" hidden onclick="location.reload()">もう一度開く</button>
+      ><button hidden="" id="retryLoad" onclick="location.reload()">もう一度開く</button>
     </div>
-    <div id="toast" role="status" aria-live="polite"></div>
+    <div aria-live="polite" id="toast" role="status"></div>
     <div id="ui">
       <header class="topbar">
-        <a class="brand" href="#" aria-label="夜の航路"
-          ><span class="brand-mark">✦</span><span>夜の航路<small>CELESTIAL FLIGHT</small></span></a
-        >
-        <nav class="view-switch" aria-label="空の表示">
-          <button data-view="space" class="active" aria-pressed="true">星空</button
-          ><button data-view="observe" aria-pressed="false">地上から観測</button
-          ><button data-view="solar" aria-pressed="false">太陽系</button>
+        <div class="brand">
+          <span class="brand-mark"
+            ><svg aria-hidden="true" class="icon"><use href="#icon-star"></use></svg></span
+          ><span>夜の航路<small>CELESTIAL FLIGHT</small></span>
+        </div>
+        <nav aria-label="空の表示" class="view-switch">
+          <button aria-pressed="true" class="active" data-view="space">
+            <svg aria-hidden="true" class="icon"><use href="#icon-star"></use></svg>星空
+          </button>
+          <button aria-pressed="false" data-view="observe">
+            <svg aria-hidden="true" class="icon"><use href="#icon-ground"></use></svg>地上から観測
+          </button>
+          <button aria-pressed="false" data-view="solar">
+            <svg aria-hidden="true" class="icon"><use href="#icon-orbit"></use></svg>太陽系
+          </button>
         </nav>
         <div class="top-actions">
-          <span id="trackingBadge" class="badge">ドラッグで見渡す</span
-          ><button id="searchOpen" aria-label="星座や星を検索">星を探す <kbd>/</kbd></button
-          ><button id="settingsButton" aria-expanded="false" aria-controls="settings">設定</button
-          ><button id="start" title="F キーでも全画面">全画面</button>
+          <span class="badge" id="trackingBadge">ドラッグで見渡す</span>
+          <button
+            aria-controls="searchPanel"
+            aria-expanded="false"
+            aria-label="星座や星を検索"
+            id="searchOpen"
+          >
+            <svg aria-hidden="true" class="icon"><use href="#icon-search"></use></svg><span>星を探す</span
+            ><kbd>/</kbd>
+          </button>
+          <button aria-controls="settings" aria-expanded="false" id="settingsButton">
+            <svg aria-hidden="true" class="icon"><use href="#icon-settings"></use></svg><span>設定</span>
+          </button>
+          <button aria-label="全画面" class="icon-button" id="start" title="全画面（F）">
+            <svg aria-hidden="true" class="icon"><use href="#icon-expand"></use></svg>
+          </button>
         </div>
       </header>
       <section class="view-caption">
@@ -39,98 +89,174 @@
         <h1 id="routeTitle">星々の海へ。</h1>
         <div id="card"></div>
         <div id="skyConditions"></div>
+        <button
+          class="target-actions"
+          id="targetActions"
+          aria-controls="selectionPanel"
+          aria-expanded="false"
+        >
+          この天体の操作 <span aria-hidden="true">↗</span>
+        </button>
+        <p class="selection-hint">空の星座をクリック／タップで選択</p>
       </section>
-      <div class="compass" id="compassReadout" aria-label="視線の方角"></div>
-      <div id="searchPanel" class="floating-panel" hidden>
+      <div aria-label="視線の方角" class="compass" id="compassReadout"></div>
+      <div
+        aria-label="星を探す"
+        class="floating-panel"
+        hidden=""
+        id="searchPanel"
+        role="dialog"
+        tabindex="-1"
+      >
         <div class="panel-heading">
           <div>
             <small>EXPLORE THE SKY</small>
             <h2>星を探す</h2>
           </div>
-          <button id="searchClose" aria-label="検索を閉じる">閉じる</button>
+          <button aria-label="検索を閉じる" class="icon-button" id="searchClose">
+            <svg aria-hidden="true" class="icon"><use href="#icon-close"></use></svg>
+          </button>
         </div>
         <input
-          id="skySearch"
-          type="search"
-          placeholder="星座・星の名前で検索"
-          autocomplete="off"
           aria-label="星座や星の名前"
+          autocomplete="off"
+          id="skySearch"
+          placeholder="オリオン、すばる、Sirius…"
+          type="search"
         />
         <div class="search-filters">
-          <button data-filter="all" class="active">すべて</button
-          ><button data-filter="constellation">星座</button><button data-filter="star">星</button>
+          <button aria-pressed="true" class="active" data-filter="all">すべて</button
+          ><button aria-pressed="false" data-filter="constellation">星座</button
+          ><button aria-pressed="false" data-filter="star">星</button>
         </div>
-        <div id="searchResults" role="list"></div>
-        <p class="quiet">選ぶとその方向へ。解説ボタンで、星をたどる旅へ。</p>
+        <p aria-live="polite" class="search-count" id="searchCount" role="status"></p>
+        <div aria-label="検索結果" id="searchResults" role="group"></div>
+        <p class="quiet">↑ ↓ で選択 · Enter で移動 · Esc で閉じる</p>
       </div>
-      <aside id="settings" class="floating-panel" aria-label="星空の設定" style="display: none">
+      <aside
+        id="selectionPanel"
+        class="floating-panel selection-panel"
+        hidden
+        role="dialog"
+        aria-labelledby="selectionTitle"
+        aria-describedby="selectionDescription"
+        tabindex="-1"
+      >
         <div class="panel-heading">
           <div>
-            <small>MAKE IT YOUR NIGHT</small>
+            <small id="selectionKind">選択した星座</small>
+            <h2 id="selectionTitle"></h2>
+          </div>
+          <button id="selectionClose" class="icon-button" aria-label="天体の操作を閉じる">
+            <svg aria-hidden="true" class="icon"><use href="#icon-close"></use></svg>
+          </button>
+        </div>
+        <p id="selectionDescription"></p>
+        <div class="selection-actions">
+          <button id="selectionSpeak" data-selection-action="speak">この星座を解説</button>
+          <button id="selectionZoom" data-selection-action="zoom">大きく見る</button>
+          <button data-selection-action="tour">ここから音声で星座を巡る</button>
+          <button data-selection-action="art">星座図と一緒に見る</button>
+          <button data-selection-action="overview" hidden>太陽系全体に戻る</button>
+        </div>
+        <p class="quiet">選択中は航行を止めています。Esc または × で閉じます。</p>
+      </aside>
+      <aside
+        aria-label="星空の設定"
+        class="floating-panel"
+        id="settings"
+        role="dialog"
+        style="display: none"
+        tabindex="-1"
+      >
+        <div class="panel-heading">
+          <div>
+            <small>YOUR OBSERVATORY</small>
             <h2>星空の設定</h2>
           </div>
-          <button id="settingsClose">閉じる</button>
+          <button aria-label="設定を閉じる" class="icon-button" id="settingsClose">
+            <svg aria-hidden="true" class="icon"><use href="#icon-close"></use></svg>
+          </button>
         </div>
-        <nav class="settings-tabs" aria-label="設定の種類">
-          <button data-tab="look" class="active">眺め方</button><button data-tab="observe">日時・場所</button
-          ><button data-tab="sound">音・解説</button><button data-tab="device">グラス</button>
+        <nav aria-label="設定の種類" class="settings-tabs" role="tablist">
+          <button
+            aria-controls="panel-look"
+            aria-selected="true"
+            class="active"
+            data-tab="look"
+            id="tab-look"
+            role="tab"
+            tabindex="0"
+          >
+            星空・移動</button
+          ><button
+            aria-controls="panel-observe"
+            aria-selected="false"
+            class=""
+            data-tab="observe"
+            id="tab-observe"
+            role="tab"
+            tabindex="-1"
+          >
+            日時・場所</button
+          ><button
+            aria-controls="panel-sound"
+            aria-selected="false"
+            class=""
+            data-tab="sound"
+            id="tab-sound"
+            role="tab"
+            tabindex="-1"
+          >
+            音・解説</button
+          ><button
+            aria-controls="panel-device"
+            aria-selected="false"
+            class=""
+            data-tab="device"
+            id="tab-device"
+            role="tab"
+            tabindex="-1"
+          >
+            操作・グラス
+          </button>
         </nav>
         <div class="settings-body">
-          <div data-settings="look">
-            <section class="setting-group">
-              <h3>すぐに楽しむ</h3>
-              <div class="presets">
-                <button data-preset="relax">静かに眺める</button
-                ><button data-preset="flight">星空を飛ぶ</button
-                ><button data-preset="guide">星座を巡る</button>
+          <div aria-labelledby="tab-look" data-settings="look" id="panel-look" role="tabpanel">
+            <p class="quiet" id="viewSettingsNote"></p>
+            <section class="setting-group" data-views="space">
+              <h3>星空での過ごし方</h3>
+              <div aria-label="星空での過ごし方" class="presets">
+                <button aria-pressed="false" data-preset="relax">
+                  <span aria-hidden="true">☾</span>静かに眺める</button
+                ><button aria-pressed="false" data-preset="flight">
+                  <span aria-hidden="true">↗</span>星空を旅する</button
+                ><button aria-pressed="false" data-preset="guide">
+                  <span aria-hidden="true">✦</span>星座を巡る
+                </button>
               </div>
             </section>
             <section class="setting-group">
-              <h3>旅の進め方</h3>
+              <h3>星空の見え方</h3>
               <label class="setting-row"
-                ><span>移動モード</span
-                ><select id="journey" aria-label="移動モード">
-                  <option value="walk">静かな散歩</option>
-                  <option value="flight" selected>星間飛行</option>
-                  <option value="forward">奥へ進む</option>
-                  <option value="cruise">飛び続ける星空巡り</option>
-                  <option value="warp">ワープ航行</option>
-                  <option value="tour">星空ツアー</option>
+                ><span>星の見え方</span
+                ><select id="starStyle">
+                  <option value="immersive">豊かな星空</option>
+                  <option value="natural">肉眼に近い星空</option>
                 </select></label
               ><label class="setting-row"
-                ><span>眺める方向</span
-                ><select id="destination" aria-label="眺める方向">
-                  <option value="core">天の川の中心へ</option>
-                  <option value="cygnus">はくちょう座へ</option>
-                  <option value="orion">オリオン座へ</option>
-                  <option value="pleiades">プレアデスへ</option>
-                  <option value="andromeda">アンドロメダへ</option>
-                  <option value="random">ランダムな方向へ</option>
-                </select></label
+                ><span>星の明るさ</span
+                ><input id="light" max="3" min="0.4" step="0.05" type="range" value="1.5" /></label
               ><label class="setting-row"
-                ><span>巡る対象</span
-                ><select id="tourKind">
-                  <option value="galactic">天の川と名所</option>
-                  <option value="all" selected>88星座を巡る</option>
-                  <option value="stars">名前のある星を巡る</option>
-                  <option value="random">ランダム巡り</option>
-                  <option value="summer">夏の星座</option>
-                  <option value="winter">冬の星座</option>
-                  <option value="zodiac">12星座</option>
-                </select></label
-              ><label class="setting-row"
-                ><span>滞在時間</span
-                ><input id="tourInterval" type="range" min="10" max="90" step="5" value="25" /></label
-              ><label class="setting-row"
-                ><span>航行速度</span><input id="speed" type="range" min="0" max="1" step="0.01" value="0.55"
+                ><span>天の川の微光</span><input checked="" id="nebula" type="checkbox"
               /></label>
             </section>
-            <section class="setting-group">
-              <h3>星図と景観</h3>
+            <section class="setting-group" data-views="space observe">
+              <h3>星図を重ねる</h3>
               <label class="setting-row"
-                ><span>星座を線で結ぶ</span><input id="lines" type="checkbox" checked /></label
+                ><span>星座を線で結ぶ</span><input checked="" id="lines" type="checkbox" /></label
               ><label class="setting-row"
-                ><span>星座の名前</span><input id="constellationLabels" type="checkbox" checked /></label
+                ><span>星座の名前</span><input checked="" id="constellationLabels" type="checkbox" /></label
               ><label class="setting-row"><span>星の名前</span><input id="names" type="checkbox" /></label
               ><label class="setting-row"
                 ><span>白黒の星座図</span
@@ -139,129 +265,192 @@
                   <option value="guide">解説中に表示</option>
                   <option value="always">常時表示</option>
                 </select></label
-              ><input id="art" type="checkbox" hidden /><label class="setting-row"
+              ><label class="setting-row"
                 ><span>図の濃さ</span
-                ><input id="artOpacity" type="range" min="0.08" max="0.7" step="0.01" value="0.28" /></label
-              ><label class="setting-row"
-                ><span>星の明るさ</span
-                ><input id="light" type="range" min="0.4" max="3" step="0.05" value="1.5" /></label
-              ><label class="setting-row"
-                ><span>星の見え方</span
-                ><select id="starStyle">
-                  <option value="immersive">豊かな星空</option>
-                  <option value="natural">肉眼に近い星空</option>
-                </select></label
-              ><label class="setting-row"
-                ><span>天の川の微光</span><input id="nebula" type="checkbox" checked /></label
-              ><label class="setting-row"
-                ><span>流れ星(演出)</span><input id="meteors" type="checkbox" checked /></label
-              ><label class="setting-row"
-                ><span>流星群</span
-                ><select id="meteorShower">
-                  <option value="auto">日付に合わせて自動</option>
-                  <option value="off">表示しない</option>
-                  <option value="quadrantids">しぶんぎ座流星群(1/3頃)</option>
-                  <option value="lyrids">こと座流星群(4/22頃)</option>
-                  <option value="eta-aquariids">みずがめ座η流星群(5/6頃)</option>
-                  <option value="perseids">ペルセウス座流星群(8/12頃)</option>
-                  <option value="draconids">りゅう座流星群(10/8頃)</option>
-                  <option value="orionids">オリオン座流星群(10/21頃)</option>
-                  <option value="leonids">しし座流星群(11/17頃)</option>
-                  <option value="geminids">ふたご座流星群(12/14頃)</option>
-                  <option value="ursids">こぐま座流星群(12/22頃)</option>
-                </select></label
-              >
-              <p id="showerStatus" class="quiet"></p>
-              <button id="showerJump">流星群の極大の夜へ移動</button
-              ><label class="setting-row"
-                ><span>地平線と方角</span><input id="horizonGuides" type="checkbox" checked /></label
-              ><label class="setting-row"
-                ><span>視野の広さ</span><input id="fov" type="range" min="8" max="100" value="65"
-              /></label>
+                ><input id="artOpacity" max="0.7" min="0.08" step="0.01" type="range" value="0.28" /></label
+              ><input hidden="" id="art" type="checkbox" />
             </section>
+            <details class="advanced" data-views="space">
+              <summary>移動を細かく調整</summary>
+              <div>
+                <label class="setting-row"
+                  ><span>移動モード</span
+                  ><select aria-label="移動モード" id="journey">
+                    <option value="walk">静かな散歩</option>
+                    <option selected="" value="flight">星間飛行</option>
+                    <option value="forward">奥へ進む</option>
+                    <option value="cruise">飛び続ける星空巡り</option>
+                    <option value="warp">ワープ航行</option>
+                    <option value="tour">星空ツアー</option>
+                  </select></label
+                ><label class="setting-row"
+                  ><span>航行速度</span
+                  ><input id="speed" max="1" min="0" step="0.01" type="range" value="0.55" /></label
+                ><label class="setting-row"
+                  ><span>巡る対象</span
+                  ><select id="tourKind">
+                    <option value="galactic">天の川と名所</option>
+                    <option selected="" value="all">88星座を巡る</option>
+                    <option value="stars">名前のある星を巡る</option>
+                    <option value="random">ランダム巡り</option>
+                    <option value="summer">夏の星座</option>
+                    <option value="winter">冬の星座</option>
+                    <option value="zodiac">12星座</option>
+                  </select></label
+                ><label class="setting-row"
+                  ><span>滞在時間</span
+                  ><input id="tourInterval" max="90" min="10" step="5" type="range" value="25"
+                /></label>
+              </div>
+            </details>
+            <details class="advanced">
+              <summary>視野・描画品質</summary>
+              <div>
+                <label class="setting-row"
+                  ><span>地平線と方角</span><input checked="" id="horizonGuides" type="checkbox" /></label
+                ><label class="setting-row"
+                  ><span>視野の広さ</span><input id="fov" max="100" min="8" type="range" value="65" /></label
+                ><label class="setting-row"
+                  ><span>描画品質</span
+                  ><select id="renderQuality">
+                    <option value="balanced">なめらかさ優先</option>
+                    <option value="fine">精細さ優先</option>
+                    <option value="light">軽量(低スペック向け)</option>
+                  </select></label
+                >
+              </div>
+            </details>
           </div>
-          <div data-settings="observe" hidden>
+          <div
+            aria-labelledby="tab-observe"
+            data-settings="observe"
+            hidden=""
+            id="panel-observe"
+            role="tabpanel"
+          >
             <section class="setting-group">
-              <h3>観測する空</h3>
+              <h3>観測する日時</h3>
+              <div class="date-shortcuts">
+                <button id="tonight">今夜21時の空へ</button><button id="now">現在の日時</button>
+              </div>
               <label class="setting-row"
-                ><span>地上からの星空</span><input id="observe" type="checkbox" /></label
+                ><span>日時</span><input id="date" step="1" type="datetime-local" /></label
               ><label class="setting-row"
-                ><span>太陽・惑星の表示</span
-                ><select id="planetMode" aria-label="惑星の表示">
-                  <option value="off">星空</option>
-                  <option value="sky">星空に惑星を表示</option>
-                  <option value="solar">太陽系の軌道と自転</option>
-                </select></label
-              ><label class="setting-row"
-                ><span>昼夜の明るさを再現</span><input id="atmosphere" type="checkbox" /></label
-              ><label class="setting-row"
-                ><span>日時</span><input step="1" id="date" type="datetime-local" /></label
-              ><label class="setting-row"
-                ><span>季節の目安</span
-                ><select id="season">
-                  <option value="">日時で指定</option>
-                  <option value="spring">春</option>
-                  <option value="summer">夏</option>
-                  <option value="autumn">秋</option>
-                  <option value="winter">冬</option>
-                </select></label
-              ><label class="setting-row"
-                ><span>時差（UTC）</span
-                ><input id="timezone" type="number" min="-12" max="14" step="0.25" value="9" /></label
-              ><button id="now">現在の日時</button>
-              <p class="quiet">
-                日時・場所から、星と月・太陽の向きを計算します。標準では昼間の日時でも星空を見渡せます。昼夜の明るさを再現すると、日中は星が見えにくくなります。
-              </p>
-            </section>
-            <section class="setting-group">
-              <h3>日食・月食</h3>
-              <button id="nextSolarEclipse">次の日食へ移動</button
-              ><button id="nextLunarEclipse">次の月食へ移動</button>
-              <p id="eclipseStatus" class="quiet">
-                観測地点で次に見られる食を探し、最大の瞬間へ移動します。「時間を進める」を1秒で1分にすると、欠けていく様子を追えます。
-              </p>
+                ><span>昼夜の明るさを再現</span><input id="atmosphere" type="checkbox"
+              /></label>
+              <p class="quiet" data-views="observe">標準では日中の日時でも星空を表示します。</p>
+              <details class="advanced">
+                <summary>季節・時差を指定</summary>
+                <div>
+                  <label class="setting-row"
+                    ><span>季節の目安</span
+                    ><select id="season">
+                      <option value="">日時で指定</option>
+                      <option value="spring">春</option>
+                      <option value="summer">夏</option>
+                      <option value="autumn">秋</option>
+                      <option value="winter">冬</option>
+                    </select></label
+                  ><label class="setting-row"
+                    ><span>時差（UTC）</span
+                    ><input id="timezone" max="14" min="-12" step="0.25" type="number" value="9"
+                  /></label>
+                </div>
+              </details>
             </section>
             <section class="setting-group">
               <h3>観測地点</h3>
-              <p id="locationName" class="quiet">東京駅付近 · 35.681° N / 139.767° E</p>
-              <button id="locate">現在地を使う</button
-              ><label class="setting-row"
-                ><span>日本の住所</span><input id="address" type="text" placeholder="東京都新宿区" /></label
-              ><button id="searchAddress">国土地理院で住所検索</button
-              ><select id="locations" aria-label="住所の検索結果">
-                <option value="">検索結果</option></select
-              ><label class="setting-row"
-                ><span>保存名</span
-                ><input id="placeName" type="text" maxlength="40" placeholder="自宅のベランダ" /></label
-              ><button id="savePlace">この場所を保存</button
-              ><select id="savedPlaces" aria-label="保存した場所">
-                <option value="">保存した場所はありません</option></select
-              ><button id="deletePlace" disabled>選んだ場所を削除</button>
+              <p class="quiet" id="locationName">東京駅付近 · 35.681° N / 139.767° E</p>
+              <button id="locate">現在地を使う</button>
+              <details class="advanced">
+                <summary>住所から観測地点を探す</summary>
+                <div>
+                  <label class="setting-row"
+                    ><span>日本の住所</span
+                    ><input id="address" placeholder="東京都新宿区" type="text" /></label
+                  ><button id="searchAddress">国土地理院で住所検索</button
+                  ><select aria-label="住所の検索結果" id="locations">
+                    <option value="">検索結果</option>
+                  </select>
+                </div>
+              </details>
+              <details class="advanced">
+                <summary>保存した観測地点</summary>
+                <div>
+                  <label class="setting-row"
+                    ><span>保存名</span
+                    ><input id="placeName" maxlength="40" placeholder="自宅のベランダ" type="text" /></label
+                  ><button id="savePlace">この場所を保存</button
+                  ><select aria-label="保存した場所" id="savedPlaces">
+                    <option value="">保存した場所はありません</option></select
+                  ><button disabled="" id="deletePlace">選んだ場所を削除</button>
+                </div>
+              </details>
               <details>
                 <summary>緯度・経度を指定</summary>
                 <label class="setting-row"
                   ><span>緯度</span
                   ><input
                     id="latitude"
-                    type="number"
-                    min="-90"
                     max="90"
+                    min="-90"
                     step="0.00001"
+                    type="number"
                     value="35.68124" /></label
                 ><label class="setting-row"
                   ><span>経度</span
-                  ><input id="longitude" type="number" min="-180" max="180" step="0.00001" value="139.76712"
+                  ><input id="longitude" max="180" min="-180" step="0.00001" type="number" value="139.76712"
                 /></label>
               </details>
             </section>
+            <details class="advanced">
+              <summary>流星群・日食・月食</summary>
+              <div>
+                <section class="setting-group">
+                  <label class="setting-row"
+                    ><span>流れ星(演出)</span><input checked="" id="meteors" type="checkbox" /></label
+                  ><label class="setting-row"
+                    ><span>流星群</span
+                    ><select id="meteorShower">
+                      <option value="auto">日付に合わせて自動</option>
+                      <option value="off">表示しない</option>
+                      <option value="quadrantids">しぶんぎ座流星群(1/3頃)</option>
+                      <option value="lyrids">こと座流星群(4/22頃)</option>
+                      <option value="eta-aquariids">みずがめ座η流星群(5/6頃)</option>
+                      <option value="perseids">ペルセウス座流星群(8/12頃)</option>
+                      <option value="draconids">りゅう座流星群(10/8頃)</option>
+                      <option value="orionids">オリオン座流星群(10/21頃)</option>
+                      <option value="leonids">しし座流星群(11/17頃)</option>
+                      <option value="geminids">ふたご座流星群(12/14頃)</option>
+                      <option value="ursids">こぐま座流星群(12/22頃)</option>
+                    </select></label
+                  >
+                  <p class="quiet" id="showerStatus"></p>
+                  <button id="showerJump">流星群の極大の夜へ移動</button
+                  ><button id="nextSolarEclipse">次の日食へ移動</button
+                  ><button id="nextLunarEclipse">次の月食へ移動</button>
+                  <p class="quiet" id="eclipseStatus">
+                    観測地点で次に見られる食を探し、最大の瞬間へ移動します。「時間を進める」を1秒で1分にすると、欠けていく様子を追えます。
+                  </p>
+                </section>
+              </div>
+            </details>
           </div>
-          <div data-settings="sound" hidden>
-            <section class="setting-group">
-              <h3>星空の語り手</h3>
+          <div aria-labelledby="tab-sound" data-settings="sound" hidden="" id="panel-sound" role="tabpanel">
+            <section class="setting-group guide-actions">
+              <h3>解説の楽しみ方</h3>
+              <button id="inspect">正面の天体を解説 <kbd>I</kbd></button
+              ><button id="narrate">音声つきで星座を巡る</button>
+              <p class="quiet">
+                見ている方向を調べるなら「正面」、次々に案内を聴くなら「音声つきで巡る」を選びます。
+              </p>
+            </section>
+            <section class="setting-group" data-views="space observe">
+              <h3>解説の声</h3>
               <label class="setting-row"
                 ><span>解説の音声</span
                 ><select id="speechEngine">
-                  <option value="neural" selected>自然な日本語音声</option>
+                  <option selected="" value="neural">自然な日本語音声</option>
                   <option value="browser">ブラウザ内の自然な声(つくよみちゃん・初回のみ約70MB)</option>
                   <option value="system">この端末の読み上げ(ブラウザ)</option>
                 </select></label
@@ -271,38 +460,42 @@
                   <option value="jf_alpha">やわらかな女性の声</option>
                   <option value="jm_kumo">落ち着いた男性の声</option>
                 </select></label
-              >
-              <p id="voiceCredit" class="quiet" hidden>
+              ><label class="setting-row"
+                ><span>端末の声</span
+                ><select id="voice"></select></label
+              ><label class="setting-row"
+                ><span>語りの速さ</span
+                ><input id="speechRate" max="1.15" min="0.65" step="0.05" type="range" value="0.95" /></label
+              ><label class="setting-row"
+                ><span>神話・由来も語る</span><input checked="" id="mythNarration" type="checkbox"
+              /></label>
+              <p class="quiet" hidden="" id="voiceCredit">
                 音声:
-                <a href="https://tyc.rei-yumesaki.net/material/corpus/" target="_blank" rel="noopener"
+                <a href="https://tyc.rei-yumesaki.net/material/corpus/" rel="noopener" target="_blank"
                   >つくよみちゃんコーパス(CV.夢前黎)</a
                 >
                 / 合成: Piper Plus
               </p>
-              <label class="setting-row"
-                ><span>Macの声</span
-                ><select id="voice"></select></label
-              ><label class="setting-row"
-                ><span>神話・由来も語る</span><input id="mythNarration" type="checkbox" checked /></label
-              ><label class="setting-row"
-                ><span>語りの速さ</span
-                ><input id="speechRate" type="range" min="0.65" max="1.15" step="0.05" value="0.95" /></label
-              ><label class="setting-row"
-                ><span>解説の後の余韻</span
-                ><input id="narrationGap" type="range" min="2" max="20" step="1" value="5" /></label
-              ><label class="setting-row"
-                ><span>対象を大きく眺める</span><input id="guideZoom" type="checkbox" checked /></label
-              ><label class="setting-row"
-                ><span>正面の解説対象</span
-                ><select id="inspectTarget">
-                  <option value="auto">星座と明るい星</option>
-                  <option value="constellation">星座を優先</option>
-                  <option value="star">全ての実在星から選ぶ</option>
-                </select></label
-              ><label class="setting-row"
-                ><span>対象を首の向きに追従</span><input id="followFocus" type="checkbox" checked
-              /></label>
-              <p class="quiet">自然な声はこのMacで生成します。準備状況は画面下に表示します。</p>
+              <details class="advanced">
+                <summary>解説中の動きと間隔</summary>
+                <div>
+                  <label class="setting-row"
+                    ><span>解説の後の余韻</span
+                    ><input id="narrationGap" max="20" min="2" step="1" type="range" value="5" /></label
+                  ><label class="setting-row"
+                    ><span>対象を大きく眺める</span><input checked="" id="guideZoom" type="checkbox" /></label
+                  ><label class="setting-row"
+                    ><span>正面の解説対象</span
+                    ><select id="inspectTarget">
+                      <option value="auto">星座と明るい星</option>
+                      <option value="constellation">星座を優先</option>
+                      <option value="star">全ての実在星から選ぶ</option>
+                    </select></label
+                  ><label class="setting-row"
+                    ><span>対象を首の向きに追従</span><input checked="" id="followFocus" type="checkbox"
+                  /></label>
+                </div>
+              </details>
             </section>
             <section class="setting-group">
               <h3>夜空の音楽</h3>
@@ -322,79 +515,94 @@
                 </select></label
               ><label class="setting-row"
                 ><span>音量</span
-                ><input id="volume" type="range" min="0" max="1" step="0.01" value="0.5" /></label
+                ><input id="volume" max="1" min="0" step="0.01" type="range" value="0.5" /></label
               ><button id="nextTrack">次の曲</button>
             </section>
           </div>
-          <div data-settings="device" hidden>
+          <div
+            aria-labelledby="tab-device"
+            data-settings="device"
+            hidden=""
+            id="panel-device"
+            role="tabpanel"
+          >
+            <section class="setting-group">
+              <h3>画面と操作</h3>
+              <button id="photo">星空を保存</button><button id="info">詳しい使い方</button>
+              <p class="quiet">H：操作の表示・非表示 / F：全画面 / I：正面を解説</p>
+            </section>
             <section class="setting-group">
               <h3>VITURE Pro</h3>
               <button id="track">頭の動きに接続</button><button id="center">正面を合わせる</button
               ><label class="setting-row"
                 ><span>表示方式</span
-                ><select id="mode" aria-label="表示方式">
+                ><select aria-label="表示方式" id="mode">
                   <option value="mono">通常 · 1080p</option>
                   <option value="sbs">Full SBS · 3840×1080</option>
                 </select></label
-              ><label class="setting-row"
-                ><span>両眼の奥行き</span
-                ><input id="depth" type="range" min="0" max="0.4" step="0.01" value="0.12" /></label
-              ><label class="setting-row"
-                ><span>頭の動きの向き</span
-                ><select id="trackingAxes">
-                  <option value="nwu">標準</option>
-                  <option value="legacy">別のセンサー形式</option>
-                </select></label
-              ><label class="setting-row"
-                ><span>左右を反転</span><input id="headInvert" type="checkbox" /></label
-              ><label class="setting-row"
-                ><span>首の傾きを反映</span><input id="headRoll" type="checkbox"
-              /></label>
-              <p class="quiet">初代Proに対応。Full SBSはグラスとMacの出力も3840 × 1080へ設定します。</p>
-            </section>
-            <section class="setting-group">
-              <h3>描画と操作</h3>
-              <label class="setting-row"
-                ><span>描画品質</span
-                ><select id="renderQuality">
-                  <option value="balanced">なめらかさ優先</option>
-                  <option value="fine">精細さ優先</option>
-                  <option value="light">軽量(低スペック向け)</option>
-                </select></label
-              ><button id="photo">星空を保存</button><button id="info">詳しい使い方</button>
-              <details>
-                <summary>接続・描画の状態</summary>
-                <p id="status"></p>
-                <p id="diagnostics"></p>
+              >
+              <p class="quiet">初代Pro用。グラスなしでも、ドラッグで自由に見渡せます。</p>
+              <details class="advanced">
+                <summary>表示とセンサーの調整</summary>
+                <div>
+                  <label class="setting-row"
+                    ><span>両眼の奥行き</span
+                    ><input id="depth" max="0.4" min="0" step="0.01" type="range" value="0.12" /></label
+                  ><label class="setting-row"
+                    ><span>頭の動きの向き</span
+                    ><select id="trackingAxes">
+                      <option value="nwu">標準</option>
+                      <option value="legacy">別のセンサー形式</option>
+                    </select></label
+                  ><label class="setting-row"
+                    ><span>左右を反転</span><input id="headInvert" type="checkbox" /></label
+                  ><label class="setting-row"
+                    ><span>首の傾きを反映</span><input id="headRoll" type="checkbox"
+                  /></label>
+                  <p class="quiet">Full SBSでは、グラスと端末の出力も3840 × 1080に設定します。</p>
+                </div>
               </details>
             </section>
+            <details class="advanced">
+              <summary>接続・描画の状態</summary>
+              <div>
+                <p id="status"></p>
+                <p id="diagnostics"></p>
+              </div>
+            </details>
           </div>
         </div>
       </aside>
-      <section id="narrationPanel" class="narration-panel" hidden aria-label="星空解説">
+      <section aria-label="星空解説" class="narration-panel" hidden="" id="narrationPanel">
         <div class="narration-meta">
           <span id="narrationState">音声を準備中</span><span id="narrationProgress"></span
-          ><button id="stopNarration" aria-label="音声解説を停止">停止</button>
+          ><button aria-label="音声解説を停止" id="stopNarration">停止</button>
         </div>
-        <div id="subtitle" aria-live="off"></div>
+        <div aria-live="off" id="subtitle"></div>
         <div class="narration-track"><span id="narrationBar"></span></div>
       </section>
       <footer class="bottom-dock">
-        <div class="main-controls">
-          <button id="narrate" class="primary">日本語の星空解説</button
-          ><button id="inspect">正面の星座・星を解説</button
-          ><button id="explainSelected">選んだ星座・星を解説</button><span class="divider"></span
-          ><button id="pause">航行を止める</button><button id="audio">夜空の曲を再生</button
-          ><button id="constellationMode" aria-pressed="true">星座の線</button
-          ><button id="artMode" aria-pressed="false">白黒の星座図</button
-          ><button id="hide" class="subtle">空だけ眺める</button>
+        <div aria-label="よく使う操作" class="main-controls">
+          <button class="primary" id="explainSelected">選んだ天体を解説</button>
+          <button aria-pressed="false" id="pause" title="星空の移動を一時停止（Space）">一時停止</button
+          ><button aria-pressed="false" id="audio">音楽</button>
+          <button class="subtle" id="hide">空だけ眺める</button>
         </div>
+
         <div class="timeline">
           <div class="clock-group">
-            <span class="clock-dot"></span><time id="timeReadout"></time
+            <span class="clock-dot"></span
+            ><button
+              aria-controls="settings"
+              aria-label="日時・場所を変更"
+              class="time-button"
+              id="observationSettings"
+              title="日時・場所を変更"
+            >
+              <time id="timeReadout"></time></button
             ><button id="timePlay">時間を進める</button
-            ><select id="timeFlow" aria-label="時間の進み方">
-              <option value="0">指定日時で固定</option>
+            ><select aria-label="時間の進み方" id="timeFlow">
+              <option value="0">時刻を固定</option>
               <option value="1">実時間</option>
               <option value="60">1秒で1分</option>
               <option value="3600">1秒で1時間</option>
@@ -405,10 +613,10 @@
               <option value="-86400">1秒で1日戻す</option>
             </select>
           </div>
-          <div id="solarControls" hidden>
+          <div hidden="" id="solarControls">
             <label
               >眺める天体
-              <select id="planetTarget" aria-label="太陽系で眺める天体">
+              <select aria-label="太陽系で眺める天体" id="planetTarget">
                 <option value="all">太陽系全体</option>
                 <option value="Mercury">水星</option>
                 <option value="Venus">金星</option>
@@ -421,32 +629,54 @@
               </select></label
             >
           </div>
-          <div class="dock-hint" id="hint">
-            ドラッグで見渡す · ホイールで拡大 · ダブルクリックで星座全体 · Hで表示
-          </div>
         </div>
       </footer>
+      <select aria-label="眺める方向" hidden="" id="destination">
+        <option value="core">天の川の中心へ</option>
+        <option value="cygnus">はくちょう座へ</option>
+        <option value="orion">オリオン座へ</option>
+        <option value="pleiades">プレアデスへ</option>
+        <option value="andromeda">アンドロメダへ</option>
+        <option value="random">ランダムな方向へ</option></select
+      ><input hidden="" id="observe" type="checkbox" /><select
+        aria-label="惑星の表示"
+        hidden=""
+        id="planetMode"
+      >
+        <option value="off">星空</option>
+        <option value="sky">星空に惑星を表示</option>
+        <option value="solar">太陽系の軌道と自転</option></select
+      ><button aria-pressed="false" hidden="" id="artMode">白黒の星座図</button
+      ><button aria-pressed="true" hidden="" id="constellationMode">星座の線</button>
     </div>
-    <button id="revealUI" hidden>操作を表示 <kbd>H</kbd></button>
-    <section id="help" class="help-dialog" role="dialog" aria-label="使い方" style="display: none">
+    <button hidden="" id="revealUI">操作を表示 <kbd>H</kbd></button>
+    <section
+      aria-label="使い方"
+      aria-modal="true"
+      class="help-dialog"
+      id="help"
+      role="dialog"
+      style="display: none"
+      tabindex="-1"
+    >
       <button id="close">閉じる</button>
       <h2>星空を、自分のペースで。</h2>
       <p>
-        「星空」は自由な旅、「地上から観測」は日時と場所を反映する空、「太陽系」は8惑星の公転と自転です。検索から好きな星座や星へ移れます。
+        上部で「星空」「地上から観測」「太陽系」を切り替えます。「星を探す」から対象を選び、「選んだ天体を解説」でその物語を聴けます。
       </p>
       <p>
-        解説では星を一つずつ紹介し、名前と線を重ねます。星座全体が画面の約80％に収まるように移動します。白黒図はOFF・解説中・常時表示から選べます。
+        設定の「星空・移動」で過ごし方を選べます。「音・解説」には正面の解説と音声つきの星座巡り、「操作・グラス」には画像保存とグラスの接続があります。日時と時間の操作は地上観測・太陽系で表示します。
       </p>
       <p>
-        H：操作表示、F：全画面、R：頭の正面、I：正面を解説、Space：航行停止。検索は /
-        キーから開けます。表示を隠しても画面をタップすると戻ります。
+        H：操作表示、F：全画面、R：頭の正面、I：正面を解説、クリック／タップ：天体を選択、ドラッグ：見渡す。Space：航行・時間の再生／停止。検索は
+        / キーから開けます。表示を隠しても画面をタップすると戻ります。
       </p>
       <p>
         118,216個の恒星は星表に基づきます。天の川を密にする微光、飛行の手前の光、流れ星は演出です。地上の空は歳差・章動を含む方角を計算します。大気・月の表面・太陽系の惑星サイズと照明には視認性のための表現上の調整があります。
       </p>
       <p><a href="使い方.md" target="_blank">詳しい使い方とクレジット</a></p>
     </section>
-    <div id="planetStatus" hidden></div>
+    <div hidden="" id="planetStatus"></div>
     <script type="importmap">
       {
         "imports": {
@@ -459,6 +689,6 @@
     </script>
     <script src="boot.js"></script>
     <script src="astronomy.browser.min.js"></script>
-    <script type="module" src="app.js"></script>
+    <script src="app.js" type="module"></script>
   </body>
 </html>

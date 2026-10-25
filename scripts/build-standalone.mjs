@@ -70,8 +70,9 @@ writeFileSync(join(out, 'app.bundle.js'), `${prelude}(async()=>{${code}})();\n`)
 
 // 4) HTML・CSS・その他の静的ファイル。
 let html = readFileSync(join(src, 'index.html'), 'utf8');
-const moduleTag = '<script type="module" src="app.js"></script>';
-if (!html.includes(moduleTag)) throw Error('index.html の app.js の読み込みが見つかりません');
+const moduleTag =
+  /<script\b(?=[^>]*\bsrc=["'](?:\.\/)?app\.js["'])(?=[^>]*\btype=["']module["'])[^>]*>\s*<\/script>/i;
+if (!moduleTag.test(html)) throw Error('index.html の app.js の読み込みが見つかりません');
 html = html.replace(moduleTag, '<script src="app.bundle.js"></script>');
 writeFileSync(join(out, 'index.html'), html);
 for (const name of ['interface.css', 'boot.js', 'astronomy.browser.min.js'])
